@@ -1,7 +1,9 @@
 import { useState } from "react"
 import { Link } from "react-router-dom"
+import { Eye, Pencil } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -19,50 +21,18 @@ import {
   TableRow,
 } from "@/components/ui/table"
 
+import {
+  sampleUsers,
+  type User,
+  type UserStatus,
+} from "../_constants/sample-users"
 import EmptyState from "./empty-state"
 import ErrorState from "./error-state"
 
-type UserStatus = "Active" | "Pending" | "Suspended"
-
-type User = {
-  id: string
-  name: string
-  email: string
-  role: string
-  status: UserStatus
-  lastActive: string
-}
-
 type UserTableProps = {
   users?: User[]
+  onEditUser?: (user: User) => void
 }
-
-const sampleUsers: User[] = [
-  {
-    id: "1",
-    name: "Budi Santoso",
-    email: "budi.santoso@company.test",
-    role: "Admin",
-    status: "Active",
-    lastActive: "Today, 09:41",
-  },
-  {
-    id: "2",
-    name: "Sari Wijaya",
-    email: "sari.wijaya@company.test",
-    role: "Manager",
-    status: "Pending",
-    lastActive: "Yesterday, 16:20",
-  },
-  {
-    id: "3",
-    name: "Andi Pratama",
-    email: "andi.pratama@company.test",
-    role: "Staff",
-    status: "Suspended",
-    lastActive: "May 17, 2026",
-  },
-]
 
 function getStatusClassName(status: UserStatus) {
   if (status === "Active") {
@@ -76,7 +46,10 @@ function getStatusClassName(status: UserStatus) {
   return "destructive"
 }
 
-export default function UserTable({ users = sampleUsers }: UserTableProps) {
+export default function UserTable({
+  users = sampleUsers,
+  onEditUser,
+}: UserTableProps) {
   const [searchKeyword, setSearchKeyword] = useState("")
   const [selectedStatus, setSelectedStatus] = useState("All")
 
@@ -172,9 +145,13 @@ export default function UserTable({ users = sampleUsers }: UserTableProps) {
           <TableHeader className="bg-slate-50">
             <TableRow>
               <TableHead scope="col">Name</TableHead>
+              <TableHead scope="col">Password</TableHead>
               <TableHead scope="col">Role</TableHead>
               <TableHead scope="col">Status</TableHead>
               <TableHead scope="col">Last Active</TableHead>
+              <TableHead scope="col" className="text-right">
+                Actions
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -189,6 +166,9 @@ export default function UserTable({ users = sampleUsers }: UserTableProps) {
                   </Link>
                   <p className="text-sm text-slate-500">{user.email}</p>
                 </TableCell>
+                <TableCell className="whitespace-nowrap font-mono text-sm">
+                  {user.password}
+                </TableCell>
                 <TableCell className="whitespace-nowrap">
                   {user.role}
                 </TableCell>
@@ -197,6 +177,24 @@ export default function UserTable({ users = sampleUsers }: UserTableProps) {
                 </TableCell>
                 <TableCell className="whitespace-nowrap">
                   {user.lastActive}
+                </TableCell>
+                <TableCell className="whitespace-nowrap text-right">
+                  <div className="flex justify-end gap-2">
+                    <Button asChild size="icon" variant="outline">
+                      <Link to={`/users/${user.id}`} aria-label={`Detail ${user.name}`}>
+                        <Eye className="size-4" aria-hidden="true" />
+                      </Link>
+                    </Button>
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="outline"
+                      aria-label={`Edit ${user.name}`}
+                      onClick={() => onEditUser?.(user)}
+                    >
+                      <Pencil className="size-4" aria-hidden="true" />
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
