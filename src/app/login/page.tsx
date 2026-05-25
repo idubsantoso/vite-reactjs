@@ -41,17 +41,17 @@ export default function LoginPage() {
     },
   })
 
-  function onSubmit(values: LoginFormValues) {
-    const user = login(values)
-
-    if (!user) {
+  async function onSubmit(values: LoginFormValues) {
+    try {
+      await login(values)
+      navigate(redirectPath, { replace: true })
+    } catch (error) {
       setError("root", {
-        message: "Email atau password tidak cocok dengan data user.",
+        message: error instanceof Error
+          ? error.message
+          : "Login gagal diproses.",
       })
-      return
     }
-
-    navigate(redirectPath, { replace: true })
   }
 
   if (isAuthenticated) {
