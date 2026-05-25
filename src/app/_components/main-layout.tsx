@@ -2,22 +2,14 @@ import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom"
 
 import { Button } from "@/components/ui/button"
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+
+import { useAuth } from "../login/_hooks/use-auth"
 
 type NavigationItem = {
   label: string
@@ -34,7 +26,13 @@ const navigationItems: NavigationItem[] = [
 export default function MainLayout() {
   const location = useLocation()
   const navigate = useNavigate()
+  const { logout } = useAuth()
   const activePath = getActivePath(location.pathname)
+
+  function handleLogout() {
+    logout()
+    navigate("/login", { replace: true })
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-950">
@@ -94,53 +92,8 @@ export default function MainLayout() {
                 </SelectContent>
               </Select>
 
-              <label className="sr-only" htmlFor="global-search">
-                Search
-              </label>
-              <Input
-                id="global-search"
-                type="search"
-                placeholder="Search backoffice"
-                className="hidden w-64 sm:block"
-              />
-
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button type="button">Add User</Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Add User</DialogTitle>
-                    <DialogDescription>
-                      Dialog primitive dari shadcn/ui. Form ini masih static.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="grid gap-4">
-                    <div className="grid gap-2">
-                      <label className="text-sm font-medium" htmlFor="new-user-name">
-                        Name
-                      </label>
-                      <Input id="new-user-name" placeholder="User name" />
-                    </div>
-                    <div className="grid gap-2">
-                      <label className="text-sm font-medium" htmlFor="new-user-email">
-                        Email
-                      </label>
-                      <Input
-                        id="new-user-email"
-                        type="email"
-                        placeholder="user@company.test"
-                      />
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <Button type="button">Save</Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-
-              <Button asChild variant="outline">
-                <NavLink to="/login">Login</NavLink>
+              <Button type="button" variant="outline" onClick={handleLogout}>
+                Logout
               </Button>
             </div>
           </div>
