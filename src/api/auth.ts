@@ -15,5 +15,7 @@ export function login(credentials: LoginCredentials) {
 }
 
 export function getCurrentUser() {
-  return apiRequest<CurrentUser>("/api/auth/me")
+  return apiRequest<CurrentUser>("/api/auth/me", {
+    scenarioParam: "authScenario",
+  })
 }

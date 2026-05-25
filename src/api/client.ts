@@ -2,6 +2,7 @@ import { AUTH_TOKEN_STORAGE_KEY } from "@/app/_constants/auth-storage"
 
 type ApiRequestOptions = Omit<RequestInit, "body"> & {
   body?: unknown
+  scenarioParam?: string | false
 }
 
 type ApiErrorPayload = {
@@ -22,8 +23,8 @@ export async function apiRequest<T>(
   path: string,
   options: ApiRequestOptions = {},
 ): Promise<T> {
-  const { body, headers, ...requestOptions } = options
-  const url = createApiUrl(path)
+  const { body, headers, scenarioParam = "scenario", ...requestOptions } = options
+  const url = createApiUrl(path, scenarioParam)
   const token = localStorage.getItem(AUTH_TOKEN_STORAGE_KEY)
   const requestHeaders = new Headers(headers)
 
@@ -54,9 +55,11 @@ export async function apiRequest<T>(
   return parseJson<T>(response)
 }
 
-function createApiUrl(path: string) {
+function createApiUrl(path: string, scenarioParam: string | false) {
   const url = new URL(path, window.location.origin)
-  const scenario = new URLSearchParams(window.location.search).get("scenario")
+  const scenario = scenarioParam
+    ? new URLSearchParams(window.location.search).get(scenarioParam)
+    : null
 
   if (scenario) {
     url.searchParams.set("scenario", scenario)
