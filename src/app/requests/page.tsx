@@ -1,6 +1,10 @@
+import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
 
+import { getRequests } from "@/api/requests"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Table,
   TableBody,
@@ -9,23 +13,36 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-
-const requests = [
-  {
-    id: "REQ-1001",
-    title: "Access approval",
-    owner: "Sari Wijaya",
-    status: "Pending",
-  },
-  {
-    id: "REQ-1002",
-    title: "Role change",
-    owner: "Andi Pratama",
-    status: "Approved",
-  },
-]
+import type { MockRequest } from "@/mocks/data"
 
 export default function RequestsPage() {
+  const [requests, setRequests] = useState<MockRequest[]>([])
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    loadRequests()
+  }, [])
+
+  async function loadRequests() {
+    setIsLoading(true)
+    setErrorMessage(null)
+
+    try {
+      const apiRequests = await getRequests()
+      setRequests(apiRequests)
+    } catch (error) {
+      setRequests([])
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Data requests gagal dimuat.",
+      )
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <header>
@@ -38,7 +55,46 @@ export default function RequestsPage() {
         </p>
       </header>
 
-      <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+      {isLoading ? (
+        <div className="space-y-3">
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-48 w-full" />
+        </div>
+      ) : null}
+
+      {!isLoading && errorMessage ? (
+        <section className="rounded-lg border border-rose-200 bg-rose-50 p-6">
+          <h3 className="text-base font-semibold text-rose-950">
+            Requests gagal dimuat
+          </h3>
+          <p className="mt-2 text-sm text-rose-800">{errorMessage}</p>
+          <Button
+            type="button"
+            variant="destructive"
+            className="mt-5"
+            onClick={loadRequests}
+          >
+            Reload requests
+          </Button>
+        </section>
+      ) : null}
+
+      {!isLoading && !errorMessage && requests.length === 0 ? (
+        <section className="rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center">
+          <h3 className="text-base font-semibold text-slate-950">
+            Tidak ada request
+          </h3>
+          <p className="mx-auto mt-2 max-w-sm text-sm text-slate-600">
+            Mock API mengembalikan data requests kosong.
+          </p>
+          <Button type="button" className="mt-5" onClick={loadRequests}>
+            Reload requests
+          </Button>
+        </section>
+      ) : null}
+
+      {!isLoading && !errorMessage && requests.length > 0 ? (
+        <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
         <Table>
           <TableHeader>
             <TableRow>
@@ -61,13 +117,26 @@ export default function RequestsPage() {
                 </TableCell>
                 <TableCell>{request.owner}</TableCell>
                 <TableCell>
-                  <Badge variant="warning">{request.status}</Badge>
+                  <RequestStatusBadge status={request.status} />
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </section>
+      ) : null}
     </div>
   )
+}
+
+function RequestStatusBadge({ status }: { status: MockRequest["status"] }) {
+  if (status === "Approved") {
+    return <Badge variant="success">{status}</Badge>
+  }
+
+  if (status === "Rejected") {
+    return <Badge variant="destructive">{status}</Badge>
+  }
+
+  return <Badge variant="warning">{status}</Badge>
 }

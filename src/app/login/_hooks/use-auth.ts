@@ -1,80 +1,89 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
+import { getCurrentUser, login as loginRequest } from "@/api/auth"
 import {
   AUTH_STORAGE_KEY,
+  AUTH_TOKEN_STORAGE_KEY,
   AUTH_USER_ID_STORAGE_KEY,
 } from "@/app/_constants/auth-storage"
-import { getSimpleUsers } from "@/app/users/_constants/sample-users"
 
 import type { CurrentUser, LoginCredentials } from "../_types/auth"
 
-function toCurrentUser(userId: string | null): CurrentUser | null {
-  const user = getSimpleUsers().find((sampleUser) => sampleUser.id === userId)
-
-  if (!user) {
-    return null
-  }
-
-  return {
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    role: user.role,
-  }
-}
-
-function getStoredUser() {
-  const isAuthenticated = localStorage.getItem(AUTH_STORAGE_KEY) === "true"
-
-  if (!isAuthenticated) {
-    return null
-  }
-
-  const currentUser = toCurrentUser(localStorage.getItem(AUTH_USER_ID_STORAGE_KEY))
-
-  if (!currentUser) {
-    localStorage.removeItem(AUTH_STORAGE_KEY)
-    localStorage.removeItem(AUTH_USER_ID_STORAGE_KEY)
-  }
-
-  return currentUser
-}
-
 export function useAuth() {
-  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(() =>
-    getStoredUser(),
-  )
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null)
+  const [isLoading, setIsLoading] = useState(() => hasStoredToken())
 
-  function login(credentials: LoginCredentials) {
-    const user = getSimpleUsers().find(
-      (sampleUser) =>
-        sampleUser.email === credentials.email &&
-        sampleUser.password === credentials.password,
-    )
+  useEffect(() => {
+    let isMounted = true
 
-    if (!user) {
-      return null
+    async function loadCurrentUser() {
+      if (!hasStoredToken()) {
+        setIsLoading(false)
+        return
+      }
+
+      try {
+        const user = await getCurrentUser()
+
+        if (isMounted) {
+          storeAuthenticatedUser(user)
+          setCurrentUser(user)
+        }
+      } catch {
+        clearStoredAuth()
+
+        if (isMounted) {
+          setCurrentUser(null)
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false)
+        }
+      }
     }
 
-    const currentUser = toCurrentUser(user.id)
+    loadCurrentUser()
 
-    localStorage.setItem(AUTH_STORAGE_KEY, "true")
-    localStorage.setItem(AUTH_USER_ID_STORAGE_KEY, user.id)
-    setCurrentUser(currentUser)
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
-    return currentUser
+  async function login(credentials: LoginCredentials) {
+    const loginResponse = await loginRequest(credentials)
+
+    localStorage.setItem(AUTH_TOKEN_STORAGE_KEY, loginResponse.token)
+    storeAuthenticatedUser(loginResponse.user)
+    setCurrentUser(loginResponse.user)
+
+    return loginResponse.user
   }
 
   function logout() {
-    localStorage.removeItem(AUTH_STORAGE_KEY)
-    localStorage.removeItem(AUTH_USER_ID_STORAGE_KEY)
+    clearStoredAuth()
     setCurrentUser(null)
   }
 
   return {
     currentUser,
     isAuthenticated: currentUser !== null,
+    isLoading,
     login,
     logout,
   }
+}
+
+function hasStoredToken() {
+  return Boolean(localStorage.getItem(AUTH_TOKEN_STORAGE_KEY))
+}
+
+function storeAuthenticatedUser(user: CurrentUser) {
+  localStorage.setItem(AUTH_STORAGE_KEY, "true")
+  localStorage.setItem(AUTH_USER_ID_STORAGE_KEY, user.id)
+}
+
+function clearStoredAuth() {
+  localStorage.removeItem(AUTH_STORAGE_KEY)
+  localStorage.removeItem(AUTH_USER_ID_STORAGE_KEY)
+  localStorage.removeItem(AUTH_TOKEN_STORAGE_KEY)
 }

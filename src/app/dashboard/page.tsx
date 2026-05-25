@@ -1,6 +1,52 @@
+import { useEffect, useState } from "react"
+
+import { getRequests } from "@/api/requests"
+import { getUsers } from "@/api/users"
+import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
+import type { MockRequest } from "@/mocks/data"
+
+import type { User } from "../users/_constants/sample-users"
 import DashboardSummary from "./_components/dashboard-summary"
 
+type SummaryItem = {
+  label: string
+  value: string
+  meta: string
+}
+
 export default function DashboardPage() {
+  const [summaryItems, setSummaryItems] = useState<SummaryItem[]>([])
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    loadDashboard()
+  }, [])
+
+  async function loadDashboard() {
+    setIsLoading(true)
+    setErrorMessage(null)
+
+    try {
+      const [users, requests] = await Promise.all([
+        getUsers(),
+        getRequests(),
+      ])
+
+      setSummaryItems(createSummaryItems(users, requests))
+    } catch (error) {
+      setSummaryItems([])
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Dashboard gagal dimuat.",
+      )
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <header className="max-w-3xl">
@@ -13,7 +59,74 @@ export default function DashboardPage() {
         </p>
       </header>
 
-      <DashboardSummary />
+      {isLoading ? (
+        <section
+          aria-label="Dashboard summary loading"
+          className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
+        >
+          {Array.from({ length: 4 }).map((_, index) => (
+            <Skeleton key={index} className="h-36 w-full" />
+          ))}
+        </section>
+      ) : null}
+
+      {!isLoading && errorMessage ? (
+        <section className="rounded-lg border border-rose-200 bg-rose-50 p-6">
+          <h3 className="text-base font-semibold text-rose-950">
+            Dashboard gagal dimuat
+          </h3>
+          <p className="mt-2 text-sm text-rose-800">{errorMessage}</p>
+          <Button
+            type="button"
+            variant="destructive"
+            className="mt-5"
+            onClick={loadDashboard}
+          >
+            Reload dashboard
+          </Button>
+        </section>
+      ) : null}
+
+      {!isLoading && !errorMessage ? (
+        <DashboardSummary items={summaryItems} />
+      ) : null}
     </div>
   )
+}
+
+function createSummaryItems(
+  users: User[],
+  requests: MockRequest[],
+): SummaryItem[] {
+  const activeUsers = users.filter((user) => user.status === "Active").length
+  const pendingUsers = users.filter((user) => user.status === "Pending").length
+  const adminUsers = users.filter((user) => user.role === "Admin").length
+  const pendingRequests = requests.filter(
+    (request) => request.status === "Pending",
+  ).length
+
+  return [
+    {
+      label: "Total Users",
+      value: users.length.toLocaleString("en-US"),
+      meta: `${activeUsers} active users`,
+    },
+    {
+      label: "Active Users",
+      value: activeUsers.toLocaleString("en-US"),
+      meta: users.length > 0
+        ? `${Math.round((activeUsers / users.length) * 100)}% activation rate`
+        : "0% activation rate",
+    },
+    {
+      label: "Pending Requests",
+      value: pendingRequests.toLocaleString("en-US"),
+      meta: `${requests.length} total requests`,
+    },
+    {
+      label: "Admins",
+      value: adminUsers.toLocaleString("en-US"),
+      meta: `${pendingUsers} pending users`,
+    },
+  ]
 }
