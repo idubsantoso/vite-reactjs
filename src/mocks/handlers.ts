@@ -1,8 +1,21 @@
 import { delay, http, HttpResponse } from "msw"
 
 import { mockAuditLogs, mockRequests, mockUsers, toCurrentUser } from "./data"
+import type { MockRequest } from "./data"
 
 type Scenario = "delay" | "empty" | "401" | "403" | "500"
+
+type UserPayload = {
+  name?: string
+  email?: string
+  password?: string
+  role?: "Admin" | "Manager" | "Staff"
+  status?: "Active" | "Pending" | "Suspended"
+}
+
+type RequestStatusPayload = {
+  status?: MockRequest["status"]
+}
 
 const MOCK_TOKEN_PREFIX = "mock-token"
 
@@ -95,6 +108,96 @@ export const handlers = [
     return HttpResponse.json(user)
   }),
 
+  http.post("/api/users", async ({ request }) => {
+    await applyMockDelay(request)
+
+    const scenarioResponse = getScenarioResponse(request)
+
+    if (scenarioResponse) {
+      return scenarioResponse
+    }
+
+    const payload = await request.json() as UserPayload
+    const user = {
+      id: crypto.randomUUID(),
+      name: payload.name ?? "",
+      email: payload.email ?? "",
+      password: payload.password ?? "",
+      role: payload.role ?? "Staff",
+      status: payload.status ?? "Active",
+      lastActive: "Never",
+    }
+
+    mockUsers.unshift(user)
+    addAuditLog("System", "Created user", user.name)
+
+    return HttpResponse.json(user, { status: 201 })
+  }),
+
+  http.put("/api/users/:id", async ({ params, request }) => {
+    await applyMockDelay(request)
+
+    const scenarioResponse = getScenarioResponse(request)
+
+    if (scenarioResponse) {
+      return scenarioResponse
+    }
+
+    const userIndex = mockUsers.findIndex((mockUser) => mockUser.id === params.id)
+
+    if (userIndex === -1) {
+      return HttpResponse.json(
+        { message: "User tidak ditemukan." },
+        { status: 404 },
+      )
+    }
+
+    const payload = await request.json() as UserPayload
+    const updatedUser = {
+      ...mockUsers[userIndex],
+      name: payload.name ?? mockUsers[userIndex].name,
+      email: payload.email ?? mockUsers[userIndex].email,
+      password: payload.password ?? mockUsers[userIndex].password,
+      role: payload.role ?? mockUsers[userIndex].role,
+      status: payload.status ?? mockUsers[userIndex].status,
+    }
+
+    mockUsers[userIndex] = updatedUser
+    addAuditLog("System", "Updated user", updatedUser.name)
+
+    return HttpResponse.json(updatedUser)
+  }),
+
+  http.patch("/api/users/:id/status", async ({ params, request }) => {
+    await applyMockDelay(request)
+
+    const scenarioResponse = getScenarioResponse(request)
+
+    if (scenarioResponse) {
+      return scenarioResponse
+    }
+
+    const userIndex = mockUsers.findIndex((mockUser) => mockUser.id === params.id)
+
+    if (userIndex === -1) {
+      return HttpResponse.json(
+        { message: "User tidak ditemukan." },
+        { status: 404 },
+      )
+    }
+
+    const payload = await request.json() as UserPayload
+    const updatedUser = {
+      ...mockUsers[userIndex],
+      status: payload.status ?? mockUsers[userIndex].status,
+    }
+
+    mockUsers[userIndex] = updatedUser
+    addAuditLog("System", `Updated user status to ${updatedUser.status}`, updatedUser.name)
+
+    return HttpResponse.json(updatedUser)
+  }),
+
   http.get("/api/requests", async ({ request }) => {
     await applyMockDelay(request)
 
@@ -128,6 +231,42 @@ export const handlers = [
     }
 
     return HttpResponse.json(mockRequest)
+  }),
+
+  http.patch("/api/requests/:id/status", async ({ params, request }) => {
+    await applyMockDelay(request)
+
+    const scenarioResponse = getScenarioResponse(request)
+
+    if (scenarioResponse) {
+      return scenarioResponse
+    }
+
+    const requestIndex = mockRequests.findIndex(
+      (requestItem) => requestItem.id === params.id,
+    )
+
+    if (requestIndex === -1) {
+      return HttpResponse.json(
+        { message: "Request tidak ditemukan." },
+        { status: 404 },
+      )
+    }
+
+    const payload = await request.json() as RequestStatusPayload
+    const updatedRequest = {
+      ...mockRequests[requestIndex],
+      status: payload.status ?? mockRequests[requestIndex].status,
+    }
+
+    mockRequests[requestIndex] = updatedRequest
+    addAuditLog(
+      "System",
+      `Updated request status to ${updatedRequest.status}`,
+      updatedRequest.id,
+    )
+
+    return HttpResponse.json(updatedRequest)
   }),
 
   http.get("/api/audit-logs", async ({ request }) => {
@@ -222,4 +361,14 @@ function getUserFromRequest(request: Request) {
     : null
 
   return mockUsers.find((user) => user.id === userId) ?? null
+}
+
+function addAuditLog(actor: string, action: string, target: string) {
+  mockAuditLogs.unshift({
+    id: `AUD-${Date.now()}`,
+    actor,
+    action,
+    target,
+    createdAt: new Date().toISOString(),
+  })
 }

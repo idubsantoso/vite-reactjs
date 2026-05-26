@@ -2,14 +2,28 @@ import { Link, useParams } from "react-router-dom"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
+import QueryStateLine from "@/app/_components/query-state-line"
 
-import { getSimpleUsers, type UserStatus } from "./_constants/sample-users"
+import type { UserStatus } from "./_constants/sample-users"
+import ErrorState from "./_components/error-state"
+import { useUserQuery } from "./_hooks/use-users-query"
 
 export default function UserDetailPage() {
   const params = useParams()
-  const user = getSimpleUsers().find((sampleUser) => sampleUser.id === params.id)
+  const userQuery = useUserQuery(params.id)
+  const user = userQuery.data
 
-  if (!user) {
+  if (userQuery.isLoading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-24 w-full" />
+        <Skeleton className="h-40 w-full" />
+      </div>
+    )
+  }
+
+  if (userQuery.isError) {
     return (
       <div className="space-y-6">
         <header>
@@ -18,15 +32,31 @@ export default function UserDetailPage() {
             User Not Found
           </h2>
           <p className="mt-2 text-sm text-slate-600">
-            User dengan ID {params.id} tidak ditemukan.
+            User dengan ID {params.id} tidak bisa dimuat.
           </p>
         </header>
+
+        <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+          <ErrorState
+            description={
+              userQuery.error instanceof Error
+                ? userQuery.error.message
+                : "User detail gagal dimuat."
+            }
+            buttonLabel="Reload user"
+            onButtonClick={() => void userQuery.refetch()}
+          />
+        </div>
 
         <Button asChild variant="outline">
           <Link to="/users">Back to Users</Link>
         </Button>
       </div>
     )
+  }
+
+  if (!user) {
+    return null
   }
 
   return (
@@ -42,7 +72,14 @@ export default function UserDetailPage() {
       </header>
 
       <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="flex items-center justify-between gap-4">
+        <QueryStateLine
+          label="User detail query"
+          isFetching={userQuery.isFetching}
+          isStale={userQuery.isStale}
+          onRefresh={() => void userQuery.refetch()}
+        />
+
+        <div className="mt-4 flex items-center justify-between gap-4">
           <div>
             <h3 className="text-base font-semibold text-slate-950">
               {user.name}
