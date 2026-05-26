@@ -1,11 +1,6 @@
 import { useMemo } from "react"
-import { Link } from "react-router-dom"
-import { useSearchParams } from "react-router-dom"
-import {
-  Eye,
-  Pencil,
-  ArrowUpDown,
-} from "lucide-react"
+import { Link, useSearchParams } from "react-router-dom"
+import { ArrowUpDown, Check, Eye, X } from "lucide-react"
 import {
   flexRender,
   getCoreRowModel,
@@ -37,91 +32,64 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import type { MockRequest } from "@/mocks/data"
 
-import {
-  sampleUsers,
-  type User,
-  type UserStatus,
-} from "../_constants/sample-users"
-import EmptyState from "./empty-state"
+import EmptyState from "../../users/_components/empty-state"
 
-type UserTableProps = {
-  users?: User[]
-  updatingStatusUserId?: string
-  onEditUser?: (user: User) => void
-  onUpdateUserStatus?: (user: User, status: UserStatus) => void
+type RequestsTableProps = {
+  requests: MockRequest[]
+  pendingRequestId?: string
+  onUpdateStatus: (request: MockRequest, status: MockRequest["status"]) => void
 }
 
-function getStatusClassName(status: UserStatus) {
-  if (status === "Active") {
-    return "success"
-  }
-
-  if (status === "Pending") {
-    return "warning"
-  }
-
-  return "destructive"
-}
-
-export default function UserTable({
-  users = sampleUsers,
-  updatingStatusUserId,
-  onEditUser,
-  onUpdateUserStatus,
-}: UserTableProps) {
+export default function RequestsTable({
+  requests,
+  pendingRequestId,
+  onUpdateStatus,
+}: RequestsTableProps) {
   const [searchParams, setSearchParams] = useSearchParams()
   const searchKeyword = searchParams.get("q") ?? ""
-  const selectedRole = searchParams.get("role") ?? "All"
   const selectedStatus = searchParams.get("status") ?? "All"
+  const selectedPriority = searchParams.get("priority") ?? "All"
+  const selectedAssignee = searchParams.get("assignee") ?? "All"
   const sorting = parseSorting(searchParams.get("sort"))
   const pagination = parsePagination(searchParams)
+  const assignees = useMemo(() => {
+    return Array.from(new Set(requests.map((request) => request.assignee)))
+  }, [requests])
   const columnFilters = useMemo<ColumnFiltersState>(() => {
     return [
-      ...(selectedRole === "All" ? [] : [{ id: "role", value: selectedRole }]),
       ...(selectedStatus === "All"
         ? []
         : [{ id: "status", value: selectedStatus }]),
+      ...(selectedPriority === "All"
+        ? []
+        : [{ id: "priority", value: selectedPriority }]),
+      ...(selectedAssignee === "All"
+        ? []
+        : [{ id: "assignee", value: selectedAssignee }]),
     ]
-  }, [selectedRole, selectedStatus])
+  }, [selectedAssignee, selectedPriority, selectedStatus])
 
-  const columns = useMemo<ColumnDef<User>[]>(() => [
+  const columns = useMemo<ColumnDef<MockRequest>[]>(() => [
     {
-      accessorKey: "name",
+      accessorKey: "id",
       header: ({ column }) => (
         <SortableHeader
-          label="Name"
+          label="Request"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         />
       ),
       cell: ({ row }) => (
-        <div className="whitespace-nowrap">
+        <div>
           <Link
-            to={`/users/${row.original.id}`}
-            className="text-sm font-medium text-slate-950 hover:underline"
+            to={`/requests/${row.original.id}`}
+            className="font-medium text-slate-950 hover:underline"
           >
-            {row.original.name}
+            {row.original.id}
           </Link>
-          <p className="text-sm text-slate-500">{row.original.email}</p>
+          <p className="text-sm text-slate-500">{row.original.title}</p>
         </div>
-      ),
-    },
-    {
-      accessorKey: "password",
-      header: "Password",
-      cell: ({ row }) => (
-        <span className="whitespace-nowrap font-mono text-sm">
-          {row.original.password}
-        </span>
-      ),
-    },
-    {
-      accessorKey: "role",
-      header: ({ column }) => (
-        <SortableHeader
-          label="Role"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        />
       ),
     },
     {
@@ -132,83 +100,92 @@ export default function UserTable({
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         />
       ),
-      cell: ({ row }) => {
-        const user = row.original
-
-        if (!onUpdateUserStatus) {
-          return <StatusBadge status={user.status} />
-        }
-
-        return (
-          <div className="space-y-1">
-            <Select
-              value={user.status}
-              disabled={Boolean(updatingStatusUserId)}
-              onValueChange={(status) =>
-                onUpdateUserStatus(user, status as UserStatus)
-              }
-            >
-              <SelectTrigger
-                className="w-36"
-                aria-label={`Update status ${user.name}`}
-              >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Active">Active</SelectItem>
-                <SelectItem value="Pending">Pending</SelectItem>
-                <SelectItem value="Suspended">Suspended</SelectItem>
-              </SelectContent>
-            </Select>
-            {updatingStatusUserId === user.id ? (
-              <p className="text-xs text-slate-500">Updating...</p>
-            ) : null}
-          </div>
-        )
-      },
+      cell: ({ row }) => <RequestStatusBadge status={row.original.status} />,
     },
     {
-      accessorKey: "lastActive",
+      accessorKey: "priority",
       header: ({ column }) => (
         <SortableHeader
-          label="Last Active"
+          label="Priority"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        />
+      ),
+      cell: ({ row }) => <PriorityBadge priority={row.original.priority} />,
+    },
+    {
+      accessorKey: "assignee",
+      header: ({ column }) => (
+        <SortableHeader
+          label="Assignee"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         />
       ),
     },
     {
+      accessorKey: "submittedAt",
+      header: ({ column }) => (
+        <SortableHeader
+          label="Submitted"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        />
+      ),
+      cell: ({ row }) => formatRequestDate(row.original.submittedAt),
+    },
+    {
       id: "actions",
       header: () => <span className="block text-right">Actions</span>,
-      cell: ({ row }) => (
-        <div className="flex justify-end gap-2">
-          <Button asChild size="sm" variant="outline">
-            <Link
-              to={`/users/${row.original.id}`}
-              aria-label={`Detail ${row.original.name}`}
+      cell: ({ row }) => {
+        const request = row.original
+        const isPending = pendingRequestId === request.id
+
+        return (
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button asChild size="sm" variant="outline">
+              <Link
+                to={`/requests/${request.id}`}
+                aria-label={`View ${request.id}`}
+              >
+                <Eye className="size-4" aria-hidden="true" />
+                View
+              </Link>
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={Boolean(pendingRequestId)}
+              aria-label={`Approve ${request.id}`}
+              onClick={() => onUpdateStatus(request, "Approved")}
             >
-              <Eye className="size-4" aria-hidden="true" />
-              Detail
-            </Link>
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            aria-label={`Edit ${row.original.name}`}
-            onClick={() => onEditUser?.(row.original)}
-          >
-            <Pencil className="size-4" aria-hidden="true" />
-            Edit
-          </Button>
-        </div>
-      ),
+              <Check className="size-4" aria-hidden="true" />
+              Approve
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={Boolean(pendingRequestId)}
+              aria-label={`Reject ${request.id}`}
+              onClick={() => onUpdateStatus(request, "Rejected")}
+            >
+              <X className="size-4" aria-hidden="true" />
+              Reject
+            </Button>
+            {isPending ? (
+              <span className="basis-full text-right text-xs text-slate-500">
+                Updating...
+              </span>
+            ) : null}
+          </div>
+        )
+      },
       enableSorting: false,
     },
-  ], [onEditUser, onUpdateUserStatus, updatingStatusUserId])
+  ], [onUpdateStatus, pendingRequestId])
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
-    data: users,
+    data: requests,
     columns,
     state: {
       globalFilter: searchKeyword,
@@ -220,9 +197,11 @@ export default function UserTable({
       const keyword = String(filterValue).toLowerCase().trim()
 
       return [
-        row.original.name,
-        row.original.email,
-        row.original.role,
+        row.original.id,
+        row.original.title,
+        row.original.owner,
+        row.original.assignee,
+        row.original.priority,
         row.original.status,
       ].some((value) => value.toLowerCase().includes(keyword))
     },
@@ -258,7 +237,10 @@ export default function UserTable({
     getPaginationRowModel: getPaginationRowModel(),
   })
 
-  function setFilter(key: "role" | "status", value: string) {
+  function setFilter(
+    key: "status" | "priority" | "assignee",
+    value: string,
+  ) {
     updateParams(setSearchParams, {
       [key]: value === "All" ? "" : value,
       page: "1",
@@ -266,102 +248,91 @@ export default function UserTable({
   }
 
   return (
-    <section
-      aria-labelledby="users-table-title"
-      className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm"
-    >
-      <div className="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+    <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+      <div className="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 xl:flex-row xl:items-center xl:justify-between">
         <div>
-          <h2
-            id="users-table-title"
-            className="text-base font-semibold text-slate-950"
-          >
-            Users Table
+          <h2 className="text-base font-semibold text-slate-950">
+            Requests Table
           </h2>
           <p className="text-sm text-slate-500">
-            Cari user berdasarkan nama, email, role, atau status.
+            Filter, sorting, dan pagination tersimpan di URL.
           </p>
         </div>
 
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <label className="sr-only" htmlFor="user-search">
-            Search users
-          </label>
+        <div className="grid gap-3 sm:grid-cols-2 xl:flex">
           <Input
-            id="user-search"
             type="search"
             value={searchKeyword}
-            placeholder="Search users"
-            className="sm:w-64"
+            placeholder="Search requests"
+            className="xl:w-56"
             onChange={(event) => table.setGlobalFilter(event.target.value)}
           />
-
-          <label className="sr-only" htmlFor="user-role-filter">
-            Filter users by role
-          </label>
-          <Select
-            value={selectedRole}
-            onValueChange={(value) => setFilter("role", value)}
-          >
-            <SelectTrigger
-              id="user-role-filter"
-              className="sm:w-40"
-              aria-label="Filter users by role"
-            >
-              <SelectValue placeholder="Role" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="All">All roles</SelectItem>
-              <SelectItem value="Admin">Admin</SelectItem>
-              <SelectItem value="Manager">Manager</SelectItem>
-              <SelectItem value="Staff">Staff</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <label className="sr-only" htmlFor="user-status-filter">
-            Filter users by status
-          </label>
           <Select
             value={selectedStatus}
             onValueChange={(value) => setFilter("status", value)}
           >
-            <SelectTrigger
-              id="user-status-filter"
-              className="sm:w-40"
-              aria-label="Filter users by status"
-            >
+            <SelectTrigger className="xl:w-36" aria-label="Filter status">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="All">All status</SelectItem>
-              <SelectItem value="Active">Active</SelectItem>
               <SelectItem value="Pending">Pending</SelectItem>
-              <SelectItem value="Suspended">Suspended</SelectItem>
+              <SelectItem value="Approved">Approved</SelectItem>
+              <SelectItem value="Rejected">Rejected</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select
+            value={selectedPriority}
+            onValueChange={(value) => setFilter("priority", value)}
+          >
+            <SelectTrigger className="xl:w-36" aria-label="Filter priority">
+              <SelectValue placeholder="Priority" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="All">All priority</SelectItem>
+              <SelectItem value="High">High</SelectItem>
+              <SelectItem value="Medium">Medium</SelectItem>
+              <SelectItem value="Low">Low</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select
+            value={selectedAssignee}
+            onValueChange={(value) => setFilter("assignee", value)}
+          >
+            <SelectTrigger className="xl:w-44" aria-label="Filter assignee">
+              <SelectValue placeholder="Assignee" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="All">All assignees</SelectItem>
+              {assignees.map((assignee) => (
+                <SelectItem key={assignee} value={assignee}>
+                  {assignee}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
       </div>
 
-      {table.getRowModel().rows.length === 0 && (
+      {table.getRowModel().rows.length === 0 ? (
         <div className="p-5">
           <EmptyState
-            title="No matching users"
-            description="Tidak ada user yang cocok dengan search, role, status, atau page saat ini."
+            title="No matching requests"
+            description="Tidak ada request yang cocok dengan search, status, priority, assignee, atau page saat ini."
             buttonLabel="Reset filters"
             onButtonClick={() =>
               updateParams(setSearchParams, {
                 q: "",
-                role: "",
                 status: "",
+                priority: "",
+                assignee: "",
                 sort: "",
                 page: "1",
               })
             }
           />
         </div>
-      )}
-
-      {table.getRowModel().rows.length > 0 && (
+      ) : (
         <Table>
           <TableHeader className="bg-slate-50">
             {table.getHeaderGroups().map((headerGroup) => (
@@ -451,14 +422,14 @@ function TablePagination({
   return (
     <div className="flex flex-col gap-3 border-t border-slate-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
       <p className="text-sm text-slate-600">
-        Page {pageIndex + 1} of {Math.max(pageCount, 1)} · {rowCount} users
+        Page {pageIndex + 1} of {Math.max(pageCount, 1)} · {rowCount} requests
       </p>
       <div className="flex items-center gap-2">
         <Select
           value={String(pageSize)}
           onValueChange={(value) => onPageSizeChange(Number(value))}
         >
-          <SelectTrigger className="w-24" aria-label="Users per page">
+          <SelectTrigger className="w-24" aria-label="Requests per page">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -486,6 +457,37 @@ function TablePagination({
       </div>
     </div>
   )
+}
+
+function RequestStatusBadge({ status }: { status: MockRequest["status"] }) {
+  if (status === "Approved") {
+    return <Badge variant="success">{status}</Badge>
+  }
+
+  if (status === "Rejected") {
+    return <Badge variant="destructive">{status}</Badge>
+  }
+
+  return <Badge variant="warning">{status}</Badge>
+}
+
+function PriorityBadge({ priority }: { priority: MockRequest["priority"] }) {
+  if (priority === "High") {
+    return <Badge variant="destructive">{priority}</Badge>
+  }
+
+  if (priority === "Medium") {
+    return <Badge variant="warning">{priority}</Badge>
+  }
+
+  return <Badge variant="outline">{priority}</Badge>
+}
+
+function formatRequestDate(submittedAt: string) {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+  }).format(new Date(submittedAt))
 }
 
 function parseSorting(value: string | null): SortingState {
@@ -539,18 +541,4 @@ function updateParams(
 
     return nextParams
   })
-}
-
-function StatusBadge({ status }: { status: UserStatus }) {
-  const statusClassName = getStatusClassName(status)
-
-  if (statusClassName === "success") {
-    return <Badge variant="success">{status}</Badge>
-  }
-
-  if (statusClassName === "warning") {
-    return <Badge variant="warning">{status}</Badge>
-  }
-
-  return <Badge variant="destructive">{status}</Badge>
 }
