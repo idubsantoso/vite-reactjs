@@ -9,3 +9,10 @@ export function getRequests() {
 export function getRequest(id: string) {
   return apiRequest<MockRequest>(`/api/requests/${id}`)
 }
+
+export function updateRequestStatus(id: string, status: MockRequest["status"]) {
+  return apiRequest<MockRequest>(`/api/requests/${id}/status`, {
+    method: "PATCH",
+    body: { status },
+  })
+}

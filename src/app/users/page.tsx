@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { Plus } from "lucide-react"
 
-import { getUsers } from "@/api/users"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import QueryStateLine from "@/app/_components/query-state-line"
 import {
   Dialog,
   DialogContent,
@@ -16,70 +16,46 @@ import { UserForm } from "./_components/user-form"
 import EmptyState from "./_components/empty-state"
 import ErrorState from "./_components/error-state"
 import UserTable from "./_components/user-table"
-import { saveSimpleUsers, type User } from "./_constants/sample-users"
+import type { User } from "./_constants/sample-users"
+import {
+  useCreateUserMutation,
+  useUpdateUserMutation,
+  useUpdateUserStatusMutation,
+} from "./_hooks/use-user-mutations"
+import { useUsersQuery } from "./_hooks/use-users-query"
 import type { UserFormValues } from "./_schemas/user-schema"
 
 export default function UsersPage() {
-  const [users, setUsers] = useState<User[]>([])
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const usersQuery = useUsersQuery()
+  const createUserMutation = useCreateUserMutation()
+  const updateUserMutation = useUpdateUserMutation()
+  const updateUserStatusMutation = useUpdateUserStatusMutation()
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [editingUser, setEditingUser] = useState<User | null>(null)
+  const users = usersQuery.data ?? []
+  const errorMessage = getErrorMessage(usersQuery.error, "Data users gagal dimuat.")
 
-  useEffect(() => {
-    loadUsers()
-  }, [])
-
-  async function loadUsers() {
-    setIsLoading(true)
-    setErrorMessage(null)
-
-    try {
-      const apiUsers = await getUsers()
-      setUsers(apiUsers)
-      saveSimpleUsers(apiUsers)
-    } catch (error) {
-      setUsers([])
-      setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : "Data users gagal dimuat.",
-      )
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  function handleCreateUser(values: UserFormValues) {
-    const newUser: User = {
-      id: crypto.randomUUID(),
-      lastActive: "Never",
-      ...values,
-    }
-
-    setUsers((currentUsers) => {
-      const nextUsers = [newUser, ...currentUsers]
-      saveSimpleUsers(nextUsers)
-      return nextUsers
-    })
+  async function handleCreateUser(values: UserFormValues) {
+    await createUserMutation.mutateAsync(values)
     setIsCreateDialogOpen(false)
   }
 
-  function handleUpdateUser(values: UserFormValues) {
+  async function handleUpdateUser(values: UserFormValues) {
     if (!editingUser) {
       return
     }
 
-    setUsers((currentUsers) => {
-      const nextUsers = currentUsers.map((user) =>
-        user.id === editingUser.id ? { ...user, ...values } : user,
-      )
-
-      saveSimpleUsers(nextUsers)
-      return nextUsers
-    })
+    await updateUserMutation.mutateAsync({ id: editingUser.id, values })
     setEditingUser(null)
   }
+
+  function handleUpdateUserStatus(user: User, status: User["status"]) {
+    updateUserStatusMutation.mutate({ id: user.id, status })
+  }
+
+  const updatingStatusUserId = updateUserStatusMutation.isPending
+    ? updateUserStatusMutation.variables?.id
+    : undefined
 
   return (
     <div className="space-y-6">
@@ -91,35 +67,48 @@ export default function UsersPage() {
       </div>
 
       <section>
-        {isLoading ? (
+        {usersQuery.isLoading ? (
           <div className="space-y-3">
             <Skeleton className="h-24 w-full" />
             <Skeleton className="h-72 w-full" />
           </div>
         ) : null}
 
-        {!isLoading && errorMessage ? (
+        {usersQuery.isError ? (
           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <ErrorState
               description={errorMessage}
               buttonLabel="Reload users"
-              onButtonClick={loadUsers}
+              onButtonClick={() => void usersQuery.refetch()}
             />
           </div>
         ) : null}
 
-        {!isLoading && !errorMessage && users.length === 0 ? (
+        {usersQuery.isSuccess && users.length === 0 ? (
           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <EmptyState
               description="Mock API mengembalikan data users kosong."
               buttonLabel="Reload users"
-              onButtonClick={loadUsers}
+              onButtonClick={() => void usersQuery.refetch()}
             />
           </div>
         ) : null}
 
-        {!isLoading && !errorMessage && users.length > 0 ? (
-          <UserTable users={users} onEditUser={setEditingUser} />
+        {usersQuery.isSuccess && users.length > 0 ? (
+          <div className="space-y-3">
+            <QueryStateLine
+              label="Users query"
+              isFetching={usersQuery.isFetching}
+              isStale={usersQuery.isStale}
+              onRefresh={() => void usersQuery.refetch()}
+            />
+            <UserTable
+              users={users}
+              updatingStatusUserId={updatingStatusUserId}
+              onEditUser={setEditingUser}
+              onUpdateUserStatus={handleUpdateUserStatus}
+            />
+          </div>
         ) : null}
       </section>
 
@@ -132,6 +121,11 @@ export default function UsersPage() {
             </DialogDescription>
           </DialogHeader>
           <UserForm onSubmit={handleCreateUser} />
+          {createUserMutation.isError ? (
+            <p className="text-sm text-red-600">
+              {getErrorMessage(createUserMutation.error, "User gagal dibuat.")}
+            </p>
+          ) : null}
         </DialogContent>
       </Dialog>
 
@@ -164,8 +158,17 @@ export default function UsersPage() {
               onSubmit={handleUpdateUser}
             />
           ) : null}
+          {updateUserMutation.isError ? (
+            <p className="text-sm text-red-600">
+              {getErrorMessage(updateUserMutation.error, "User gagal diupdate.")}
+            </p>
+          ) : null}
         </DialogContent>
       </Dialog>
     </div>
   )
+}
+
+function getErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback
 }

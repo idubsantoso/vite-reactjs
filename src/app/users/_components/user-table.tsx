@@ -31,7 +31,9 @@ import ErrorState from "./error-state"
 
 type UserTableProps = {
   users?: User[]
+  updatingStatusUserId?: string
   onEditUser?: (user: User) => void
+  onUpdateUserStatus?: (user: User, status: UserStatus) => void
 }
 
 function getStatusClassName(status: UserStatus) {
@@ -48,7 +50,9 @@ function getStatusClassName(status: UserStatus) {
 
 export default function UserTable({
   users = sampleUsers,
+  updatingStatusUserId,
   onEditUser,
+  onUpdateUserStatus,
 }: UserTableProps) {
   const [searchKeyword, setSearchKeyword] = useState("")
   const [selectedStatus, setSelectedStatus] = useState("All")
@@ -156,7 +160,7 @@ export default function UserTable({
           </TableHeader>
           <TableBody>
             {filteredUsers.map((user) => (
-              <TableRow key={user.email}>
+              <TableRow key={user.id}>
                 <TableCell className="whitespace-nowrap">
                   <Link
                     to={`/users/${user.id}`}
@@ -173,7 +177,34 @@ export default function UserTable({
                   {user.role}
                 </TableCell>
                 <TableCell className="whitespace-nowrap">
-                  <StatusBadge status={user.status} />
+                  {onUpdateUserStatus ? (
+                    <div className="space-y-1">
+                      <Select
+                        value={user.status}
+                        disabled={Boolean(updatingStatusUserId)}
+                        onValueChange={(status) =>
+                          onUpdateUserStatus(user, status as UserStatus)
+                        }
+                      >
+                        <SelectTrigger
+                          className="w-36"
+                          aria-label={`Update status ${user.name}`}
+                        >
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Active">Active</SelectItem>
+                          <SelectItem value="Pending">Pending</SelectItem>
+                          <SelectItem value="Suspended">Suspended</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {updatingStatusUserId === user.id ? (
+                        <p className="text-xs text-slate-500">Updating...</p>
+                      ) : null}
+                    </div>
+                  ) : (
+                    <StatusBadge status={user.status} />
+                  )}
                 </TableCell>
                 <TableCell className="whitespace-nowrap">
                   {user.lastActive}

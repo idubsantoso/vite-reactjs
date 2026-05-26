@@ -1,12 +1,11 @@
-import { useEffect, useState } from "react"
-
-import { getRequests } from "@/api/requests"
-import { getUsers } from "@/api/users"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import QueryStateLine from "@/app/_components/query-state-line"
 import type { MockRequest } from "@/mocks/data"
 
 import type { User } from "../users/_constants/sample-users"
+import { useRequestsQuery } from "../requests/_hooks/use-requests-query"
+import { useUsersQuery } from "../users/_hooks/use-users-query"
 import DashboardSummary from "./_components/dashboard-summary"
 
 type SummaryItem = {
@@ -16,35 +15,23 @@ type SummaryItem = {
 }
 
 export default function DashboardPage() {
-  const [summaryItems, setSummaryItems] = useState<SummaryItem[]>([])
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const usersQuery = useUsersQuery()
+  const requestsQuery = useRequestsQuery()
+  const isLoading = usersQuery.isLoading || requestsQuery.isLoading
+  const isFetching = usersQuery.isFetching || requestsQuery.isFetching
+  const isStale = usersQuery.isStale || requestsQuery.isStale
+  const isError = usersQuery.isError || requestsQuery.isError
+  const error = usersQuery.error ?? requestsQuery.error
+  const errorMessage = error instanceof Error
+    ? error.message
+    : "Dashboard gagal dimuat."
+  const summaryItems = usersQuery.data && requestsQuery.data
+    ? createSummaryItems(usersQuery.data, requestsQuery.data)
+    : []
 
-  useEffect(() => {
-    loadDashboard()
-  }, [])
-
-  async function loadDashboard() {
-    setIsLoading(true)
-    setErrorMessage(null)
-
-    try {
-      const [users, requests] = await Promise.all([
-        getUsers(),
-        getRequests(),
-      ])
-
-      setSummaryItems(createSummaryItems(users, requests))
-    } catch (error) {
-      setSummaryItems([])
-      setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : "Dashboard gagal dimuat.",
-      )
-    } finally {
-      setIsLoading(false)
-    }
+  function refetchDashboard() {
+    void usersQuery.refetch()
+    void requestsQuery.refetch()
   }
 
   return (
@@ -70,7 +57,7 @@ export default function DashboardPage() {
         </section>
       ) : null}
 
-      {!isLoading && errorMessage ? (
+      {!isLoading && isError ? (
         <section className="rounded-lg border border-rose-200 bg-rose-50 p-6">
           <h3 className="text-base font-semibold text-rose-950">
             Dashboard gagal dimuat
@@ -80,15 +67,23 @@ export default function DashboardPage() {
             type="button"
             variant="destructive"
             className="mt-5"
-            onClick={loadDashboard}
+            onClick={refetchDashboard}
           >
             Reload dashboard
           </Button>
         </section>
       ) : null}
 
-      {!isLoading && !errorMessage ? (
-        <DashboardSummary items={summaryItems} />
+      {!isLoading && !isError ? (
+        <>
+          <QueryStateLine
+            label="Dashboard queries"
+            isFetching={isFetching}
+            isStale={isStale}
+            onRefresh={refetchDashboard}
+          />
+          <DashboardSummary items={summaryItems} />
+        </>
       ) : null}
     </div>
   )

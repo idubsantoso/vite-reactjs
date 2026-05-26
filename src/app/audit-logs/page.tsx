@@ -1,38 +1,16 @@
-import { useEffect, useState } from "react"
-
-import { getAuditLogs } from "@/api/audit-logs"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import type { AuditLog } from "@/mocks/data"
+import QueryStateLine from "@/app/_components/query-state-line"
+
+import { useAuditLogsQuery } from "./_hooks/use-audit-logs-query"
 
 export default function AuditLogsPage() {
-  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([])
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-
-  useEffect(() => {
-    loadAuditLogs()
-  }, [])
-
-  async function loadAuditLogs() {
-    setIsLoading(true)
-    setErrorMessage(null)
-
-    try {
-      const apiAuditLogs = await getAuditLogs()
-      setAuditLogs(apiAuditLogs)
-    } catch (error) {
-      setAuditLogs([])
-      setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : "Audit logs gagal dimuat.",
-      )
-    } finally {
-      setIsLoading(false)
-    }
-  }
+  const auditLogsQuery = useAuditLogsQuery()
+  const auditLogs = auditLogsQuery.data ?? []
+  const errorMessage = auditLogsQuery.error instanceof Error
+    ? auditLogsQuery.error.message
+    : "Audit logs gagal dimuat."
 
   return (
     <div className="space-y-6">
@@ -47,7 +25,7 @@ export default function AuditLogsPage() {
       </header>
 
       <section className="space-y-3">
-        {isLoading ? (
+        {auditLogsQuery.isLoading ? (
           <>
             <Skeleton className="h-16 w-full" />
             <Skeleton className="h-16 w-full" />
@@ -55,7 +33,7 @@ export default function AuditLogsPage() {
           </>
         ) : null}
 
-        {!isLoading && errorMessage ? (
+        {auditLogsQuery.isError ? (
           <article className="rounded-lg border border-rose-200 bg-rose-50 p-6">
             <h3 className="text-base font-semibold text-rose-950">
               Audit logs gagal dimuat
@@ -65,14 +43,14 @@ export default function AuditLogsPage() {
               type="button"
               variant="destructive"
               className="mt-5"
-              onClick={loadAuditLogs}
+              onClick={() => void auditLogsQuery.refetch()}
             >
               Reload audit logs
             </Button>
           </article>
         ) : null}
 
-        {!isLoading && !errorMessage && auditLogs.length === 0 ? (
+        {auditLogsQuery.isSuccess && auditLogs.length === 0 ? (
           <article className="rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center">
             <h3 className="text-base font-semibold text-slate-950">
               Tidak ada audit log
@@ -80,28 +58,42 @@ export default function AuditLogsPage() {
             <p className="mx-auto mt-2 max-w-sm text-sm text-slate-600">
               Mock API mengembalikan data audit logs kosong.
             </p>
-            <Button type="button" className="mt-5" onClick={loadAuditLogs}>
+            <Button
+              type="button"
+              className="mt-5"
+              onClick={() => void auditLogsQuery.refetch()}
+            >
               Reload audit logs
             </Button>
           </article>
         ) : null}
 
-        {!isLoading && !errorMessage ? auditLogs.map((log) => (
-          <article
-            key={log.id}
-            className="flex items-center justify-between rounded-lg border border-slate-200 bg-white p-4 shadow-sm"
-          >
-            <div>
-              <p className="text-sm font-medium text-slate-950">
-                {log.actor} {log.action}
-              </p>
-              <p className="mt-1 text-sm text-slate-500">{log.target}</p>
-            </div>
-            <Badge variant="outline">
-              {formatAuditDate(log.createdAt)}
-            </Badge>
-          </article>
-        )) : null}
+        {auditLogsQuery.isSuccess && auditLogs.length > 0 ? (
+          <>
+            <QueryStateLine
+              label="Audit logs query"
+              isFetching={auditLogsQuery.isFetching}
+              isStale={auditLogsQuery.isStale}
+              onRefresh={() => void auditLogsQuery.refetch()}
+            />
+            {auditLogs.map((log) => (
+              <article
+                key={log.id}
+                className="flex items-center justify-between rounded-lg border border-slate-200 bg-white p-4 shadow-sm"
+              >
+                <div>
+                  <p className="text-sm font-medium text-slate-950">
+                    {log.actor} {log.action}
+                  </p>
+                  <p className="mt-1 text-sm text-slate-500">{log.target}</p>
+                </div>
+                <Badge variant="outline">
+                  {formatAuditDate(log.createdAt)}
+                </Badge>
+              </article>
+            ))}
+          </>
+        ) : null}
       </section>
     </div>
   )
