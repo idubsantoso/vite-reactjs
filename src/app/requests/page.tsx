@@ -1,27 +1,29 @@
-import { Link } from "react-router-dom"
-
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import QueryStateLine from "@/app/_components/query-state-line"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
 import type { MockRequest } from "@/mocks/data"
 
+import RequestsTable from "./_components/requests-table"
+import { useUpdateRequestStatusMutation } from "./_hooks/use-request-mutations"
 import { useRequestsQuery } from "./_hooks/use-requests-query"
 
 export default function RequestsPage() {
   const requestsQuery = useRequestsQuery()
+  const updateRequestStatusMutation = useUpdateRequestStatusMutation()
   const requests = requestsQuery.data ?? []
   const errorMessage = requestsQuery.error instanceof Error
     ? requestsQuery.error.message
     : "Data requests gagal dimuat."
+  const pendingRequestId = updateRequestStatusMutation.isPending
+    ? updateRequestStatusMutation.variables?.id
+    : undefined
+
+  function handleUpdateStatus(
+    request: MockRequest,
+    status: MockRequest["status"],
+  ) {
+    updateRequestStatusMutation.mutate({ id: request.id, status })
+  }
 
   return (
     <div className="space-y-6">
@@ -85,50 +87,25 @@ export default function RequestsPage() {
             isStale={requestsQuery.isStale}
             onRefresh={() => void requestsQuery.refetch()}
           />
-          <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead scope="col">Request</TableHead>
-                <TableHead scope="col">Owner</TableHead>
-                <TableHead scope="col">Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {requests.map((request) => (
-                <TableRow key={request.id}>
-                  <TableCell>
-                    <Link
-                      to={`/requests/${request.id}`}
-                      className="font-medium text-slate-950 hover:underline"
-                    >
-                      {request.id}
-                    </Link>
-                    <p className="text-sm text-slate-500">{request.title}</p>
-                  </TableCell>
-                  <TableCell>{request.owner}</TableCell>
-                  <TableCell>
-                    <RequestStatusBadge status={request.status} />
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </section>
+          {updateRequestStatusMutation.isSuccess ? (
+            <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+              Request status updated.
+            </p>
+          ) : null}
+          {updateRequestStatusMutation.isError ? (
+            <p className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+              {updateRequestStatusMutation.error instanceof Error
+                ? updateRequestStatusMutation.error.message
+                : "Request status gagal diupdate."}
+            </p>
+          ) : null}
+          <RequestsTable
+            requests={requests}
+            pendingRequestId={pendingRequestId}
+            onUpdateStatus={handleUpdateStatus}
+          />
         </div>
       ) : null}
     </div>
   )
-}
-
-function RequestStatusBadge({ status }: { status: MockRequest["status"] }) {
-  if (status === "Approved") {
-    return <Badge variant="success">{status}</Badge>
-  }
-
-  if (status === "Rejected") {
-    return <Badge variant="destructive">{status}</Badge>
-  }
-
-  return <Badge variant="warning">{status}</Badge>
 }

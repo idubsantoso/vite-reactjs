@@ -1,5 +1,6 @@
 import { Link, useParams } from "react-router-dom"
 
+import { ApiError } from "@/api/client"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -12,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import type { MockRequest } from "@/mocks/data"
+import type { RequestStatusScenario } from "@/api/requests"
 
 import { useUpdateRequestStatusMutation } from "./_hooks/use-request-mutations"
 import { useRequestQuery } from "./_hooks/use-requests-query"
@@ -22,12 +24,15 @@ export default function RequestDetailPage() {
   const updateRequestStatusMutation = useUpdateRequestStatusMutation()
   const request = requestQuery.data
 
-  function handleUpdateStatus(status: MockRequest["status"]) {
+  function handleUpdateStatus(
+    status: MockRequest["status"],
+    scenario?: RequestStatusScenario,
+  ) {
     if (!request) {
       return
     }
 
-    updateRequestStatusMutation.mutate({ id: request.id, status })
+    updateRequestStatusMutation.mutate({ id: request.id, status, scenario })
   }
 
   if (requestQuery.isLoading) {
@@ -97,6 +102,9 @@ export default function RequestDetailPage() {
             <p className="mt-1 text-sm text-slate-600">
               Owner: {request.owner}
             </p>
+            <p className="mt-1 text-sm text-slate-600">
+              Assignee: {request.assignee}
+            </p>
             <p className="mt-1 text-sm text-slate-500">
               Submitted: {formatRequestDate(request.submittedAt)}
             </p>
@@ -104,6 +112,7 @@ export default function RequestDetailPage() {
 
           <div className="flex items-center gap-3">
             <RequestStatusBadge status={request.status} />
+            <PriorityBadge priority={request.priority} />
             <Select
               value={request.status}
               disabled={updateRequestStatusMutation.isPending}
@@ -123,16 +132,51 @@ export default function RequestDetailPage() {
           </div>
         </div>
 
+        <div className="mt-5 flex flex-wrap gap-2">
+          <Button
+            type="button"
+            disabled={updateRequestStatusMutation.isPending}
+            onClick={() => handleUpdateStatus("Approved")}
+          >
+            Approve request
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={updateRequestStatusMutation.isPending}
+            onClick={() => handleUpdateStatus("Rejected")}
+          >
+            Reject request
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={updateRequestStatusMutation.isPending}
+            onClick={() => handleUpdateStatus(request.status, "403")}
+          >
+            Simulate 403
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={updateRequestStatusMutation.isPending}
+            onClick={() => handleUpdateStatus(request.status, "500")}
+          >
+            Simulate 500
+          </Button>
+        </div>
+
         {updateRequestStatusMutation.isError ? (
-          <p className="mt-4 text-sm text-red-600">
-            {updateRequestStatusMutation.error instanceof Error
-              ? updateRequestStatusMutation.error.message
-              : "Status request gagal diupdate."}
-          </p>
+          <RequestStatusUpdateError error={updateRequestStatusMutation.error} />
         ) : null}
         {updateRequestStatusMutation.isPending ? (
-          <p className="mt-4 text-sm text-slate-500">
+          <p className="mt-4 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
             Updating request status...
+          </p>
+        ) : null}
+        {updateRequestStatusMutation.isSuccess ? (
+          <p className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+            Request status update succeeded.
           </p>
         ) : null}
       </section>
@@ -154,6 +198,37 @@ function RequestStatusBadge({ status }: { status: MockRequest["status"] }) {
   }
 
   return <Badge variant="warning">{status}</Badge>
+}
+
+function PriorityBadge({ priority }: { priority: MockRequest["priority"] }) {
+  if (priority === "High") {
+    return <Badge variant="destructive">{priority}</Badge>
+  }
+
+  if (priority === "Medium") {
+    return <Badge variant="warning">{priority}</Badge>
+  }
+
+  return <Badge variant="outline">{priority}</Badge>
+}
+
+function RequestStatusUpdateError({ error }: { error: unknown }) {
+  const status = error instanceof ApiError ? error.status : null
+  const title = status === 403
+    ? "403 state"
+    : status === 500
+      ? "500 state"
+      : "Request status update failed"
+  const message = error instanceof Error
+    ? error.message
+    : "Status request gagal diupdate."
+
+  return (
+    <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3">
+      <p className="text-sm font-semibold text-rose-950">{title}</p>
+      <p className="mt-1 text-sm text-rose-800">{message}</p>
+    </div>
+  )
 }
 
 function formatRequestDate(submittedAt: string) {

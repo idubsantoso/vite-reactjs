@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { updateRequestStatus } from "@/api/requests"
+import type { RequestStatusScenario } from "@/api/requests"
 import { auditLogsQueryKeys } from "@/app/audit-logs/_hooks/use-audit-logs-query"
 import type { MockRequest } from "@/mocks/data"
 
@@ -13,10 +14,12 @@ export function useUpdateRequestStatusMutation() {
     mutationFn: ({
       id,
       status,
+      scenario,
     }: {
       id: string
       status: MockRequest["status"]
-    }) => updateRequestStatus(id, status),
+      scenario?: RequestStatusScenario
+    }) => updateRequestStatus(id, status, scenario),
     onSuccess: (request) => {
       void queryClient.invalidateQueries({ queryKey: requestsQueryKeys.all })
       void queryClient.invalidateQueries({
