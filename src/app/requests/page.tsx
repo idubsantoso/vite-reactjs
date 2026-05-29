@@ -1,5 +1,7 @@
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import ApiErrorState from "@/app/_components/api-error-state"
+import { useApiAuthRedirect } from "@/app/_hooks/use-api-auth-redirect"
 import QueryStateLine from "@/app/_components/query-state-line"
 import type { MockRequest } from "@/mocks/data"
 
@@ -11,9 +13,8 @@ export default function RequestsPage() {
   const requestsQuery = useRequestsQuery()
   const updateRequestStatusMutation = useUpdateRequestStatusMutation()
   const requests = requestsQuery.data ?? []
-  const errorMessage = requestsQuery.error instanceof Error
-    ? requestsQuery.error.message
-    : "Data requests gagal dimuat."
+  useApiAuthRedirect(requestsQuery.error)
+  useApiAuthRedirect(updateRequestStatusMutation.error)
   const pendingRequestId = updateRequestStatusMutation.isPending
     ? updateRequestStatusMutation.variables?.id
     : undefined
@@ -45,20 +46,11 @@ export default function RequestsPage() {
       ) : null}
 
       {requestsQuery.isError ? (
-        <section className="rounded-lg border border-rose-200 bg-rose-50 p-6">
-          <h3 className="text-base font-semibold text-rose-950">
-            Requests gagal dimuat
-          </h3>
-          <p className="mt-2 text-sm text-rose-800">{errorMessage}</p>
-          <Button
-            type="button"
-            variant="destructive"
-            className="mt-5"
-            onClick={() => void requestsQuery.refetch()}
-          >
-            Reload requests
-          </Button>
-        </section>
+        <ApiErrorState
+          error={requestsQuery.error}
+          fallbackMessage="Data requests gagal dimuat."
+          onRetry={() => void requestsQuery.refetch()}
+        />
       ) : null}
 
       {requestsQuery.isSuccess && requests.length === 0 ? (

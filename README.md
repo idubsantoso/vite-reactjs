@@ -1,5 +1,66 @@
 # React + TypeScript + Vite
 
+## Backend Mode
+
+Development uses MSW by default for mock `/api` responses.
+
+Use the real backend by disabling MSW:
+
+```bash
+VITE_USE_MSW=false pnpm dev
+```
+
+When `VITE_USE_MSW=false`, requests to `/api/...` are not intercepted by MSW
+and will be sent to the real backend available from the app origin or Vite
+proxy.
+
+To target a backend on a different origin, set `VITE_API_BASE_URL`:
+
+```bash
+VITE_USE_MSW=false VITE_API_BASE_URL=https://api.example.test pnpm dev
+```
+
+When `VITE_API_BASE_URL` is empty, the API client uses the app origin.
+
+## Demo Path
+
+Run the app locally with mocks:
+
+```bash
+pnpm dev
+```
+
+Use a mock user to log in:
+
+- Email: `busan@company.test`
+- Password: `admin123`
+
+Walkthrough:
+
+- Open `/`; after login it redirects to `/dashboard`.
+- Visit `/users`, `/requests`, and `/audit-logs`.
+- Use `?scenario=delay` to see loading states.
+- Use `?scenario=empty` to see initial empty states.
+- Use `?scenario=403` to see forbidden states.
+- Use `?scenario=500` to see server error states.
+- Use `?scenario=401` to confirm auth failures redirect to `/login`.
+- Open a request detail page and update request status to see pending,
+  success, and failure feedback.
+
+Auth failure behavior:
+
+- Protected routes without a valid token redirect to `/login`.
+- Permission failures from API responses render a forbidden state.
+
+## Known Limitations and Follow-up Fixes
+
+- Real backend responses must match the current `/api/...` response shapes.
+- Users, requests, and audit logs table filtering/pagination are client-side
+  until backend query contracts are added.
+- MSW mock data is in-memory and resets on page reload.
+- Production bundle currently has a Vite chunk-size warning; route-level code
+  splitting is a follow-up.
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:
