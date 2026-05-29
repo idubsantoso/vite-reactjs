@@ -3,16 +3,18 @@ import { Link, useParams } from "react-router-dom"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import ApiErrorState from "@/app/_components/api-error-state"
+import { useApiAuthRedirect } from "@/app/_hooks/use-api-auth-redirect"
 import QueryStateLine from "@/app/_components/query-state-line"
 
 import type { UserStatus } from "./_constants/sample-users"
-import ErrorState from "./_components/error-state"
 import { useUserQuery } from "./_hooks/use-users-query"
 
 export default function UserDetailPage() {
   const params = useParams()
   const userQuery = useUserQuery(params.id)
   const user = userQuery.data
+  useApiAuthRedirect(userQuery.error)
 
   if (userQuery.isLoading) {
     return (
@@ -36,21 +38,11 @@ export default function UserDetailPage() {
           </p>
         </header>
 
-        <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <ErrorState
-            description={
-              userQuery.error instanceof Error
-                ? userQuery.error.message
-                : "User detail gagal dimuat."
-            }
-            buttonLabel="Reload user"
-            onButtonClick={() => void userQuery.refetch()}
-          />
-        </div>
-
-        <Button asChild variant="outline">
-          <Link to="/users">Back to Users</Link>
-        </Button>
+        <ApiErrorState
+          error={userQuery.error}
+          fallbackMessage="User detail gagal dimuat."
+          onRetry={() => void userQuery.refetch()}
+        />
       </div>
     )
   }
