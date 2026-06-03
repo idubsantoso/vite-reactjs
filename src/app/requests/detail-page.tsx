@@ -4,6 +4,8 @@ import { ApiError } from "@/api/client"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import ApiErrorState from "@/app/_components/api-error-state"
+import { useApiAuthRedirect } from "@/app/_hooks/use-api-auth-redirect"
 import QueryStateLine from "@/app/_components/query-state-line"
 import {
   Select,
@@ -23,6 +25,8 @@ export default function RequestDetailPage() {
   const requestQuery = useRequestQuery(params.id)
   const updateRequestStatusMutation = useUpdateRequestStatusMutation()
   const request = requestQuery.data
+  useApiAuthRedirect(requestQuery.error)
+  useApiAuthRedirect(updateRequestStatusMutation.error)
 
   function handleUpdateStatus(
     status: MockRequest["status"],
@@ -45,27 +49,23 @@ export default function RequestDetailPage() {
   }
 
   if (requestQuery.isError) {
-    const errorMessage = requestQuery.error instanceof Error
-      ? requestQuery.error.message
-      : "Request detail gagal dimuat."
-
     return (
       <div className="space-y-6">
         <header>
           <p className="text-sm font-medium text-slate-500">Requests</p>
           <h2 className="mt-1 text-2xl font-semibold text-slate-950">
-            Request Not Found
+            Request Detail
           </h2>
-          <p className="mt-2 text-sm text-slate-600">{errorMessage}</p>
+          <p className="mt-2 text-sm text-slate-600">
+            Request detail tidak bisa dimuat.
+          </p>
         </header>
 
-        <Button type="button" onClick={() => void requestQuery.refetch()}>
-          Reload request
-        </Button>
-
-        <Button asChild variant="outline">
-          <Link to="/requests">Back to Requests</Link>
-        </Button>
+        <ApiErrorState
+          error={requestQuery.error}
+          fallbackMessage="Request detail gagal dimuat."
+          onRetry={() => void requestQuery.refetch()}
+        />
       </div>
     )
   }
@@ -215,7 +215,7 @@ function PriorityBadge({ priority }: { priority: MockRequest["priority"] }) {
 function RequestStatusUpdateError({ error }: { error: unknown }) {
   const status = error instanceof ApiError ? error.status : null
   const title = status === 403
-    ? "403 state"
+    ? "Forbidden"
     : status === 500
       ? "500 state"
       : "Request status update failed"

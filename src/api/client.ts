@@ -56,7 +56,11 @@ export async function apiRequest<T>(
 }
 
 function createApiUrl(path: string, scenarioParam: string | false) {
-  const url = new URL(path, window.location.origin)
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL
+  const baseUrl = typeof apiBaseUrl === "string" && apiBaseUrl.length > 0
+    ? apiBaseUrl
+    : window.location.origin
+  const url = new URL(path, baseUrl)
   const scenario = scenarioParam
     ? new URLSearchParams(window.location.search).get(scenarioParam)
     : null

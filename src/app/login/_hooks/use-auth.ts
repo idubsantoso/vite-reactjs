@@ -22,7 +22,6 @@ export function useAuth() {
   useEffect(() => {
     if (currentUserQuery.isError) {
       clearStoredAuth()
-      queryClient.removeQueries({ queryKey: currentUserQueryKey })
     }
   }, [currentUserQuery.isError, queryClient])
 
@@ -43,6 +42,8 @@ export function useAuth() {
 
   return {
     currentUser,
+    error: currentUserQuery.error,
+    isAuthError: currentUserQuery.isError,
     isAuthenticated: currentUser !== null,
     isLoading: currentUserQuery.isLoading,
     login,

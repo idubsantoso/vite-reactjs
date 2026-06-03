@@ -3,6 +3,8 @@ import { Plus } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import ApiErrorState from "@/app/_components/api-error-state"
+import { useApiAuthRedirect } from "@/app/_hooks/use-api-auth-redirect"
 import QueryStateLine from "@/app/_components/query-state-line"
 import {
   Dialog,
@@ -14,7 +16,6 @@ import {
 
 import { UserForm } from "./_components/user-form"
 import EmptyState from "./_components/empty-state"
-import ErrorState from "./_components/error-state"
 import UserTable from "./_components/user-table"
 import type { User } from "./_constants/sample-users"
 import {
@@ -33,7 +34,10 @@ export default function UsersPage() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [editingUser, setEditingUser] = useState<User | null>(null)
   const users = usersQuery.data ?? []
-  const errorMessage = getErrorMessage(usersQuery.error, "Data users gagal dimuat.")
+  useApiAuthRedirect(usersQuery.error)
+  useApiAuthRedirect(createUserMutation.error)
+  useApiAuthRedirect(updateUserMutation.error)
+  useApiAuthRedirect(updateUserStatusMutation.error)
 
   async function handleCreateUser(values: UserFormValues) {
     await createUserMutation.mutateAsync(values)
@@ -75,13 +79,11 @@ export default function UsersPage() {
         ) : null}
 
         {usersQuery.isError ? (
-          <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-            <ErrorState
-              description={errorMessage}
-              buttonLabel="Reload users"
-              onButtonClick={() => void usersQuery.refetch()}
-            />
-          </div>
+          <ApiErrorState
+            error={usersQuery.error}
+            fallbackMessage="Data users gagal dimuat."
+            onRetry={() => void usersQuery.refetch()}
+          />
         ) : null}
 
         {usersQuery.isSuccess && users.length === 0 ? (

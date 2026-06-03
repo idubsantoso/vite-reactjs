@@ -1,16 +1,16 @@
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import ApiErrorState from "@/app/_components/api-error-state"
+import { useApiAuthRedirect } from "@/app/_hooks/use-api-auth-redirect"
 import QueryStateLine from "@/app/_components/query-state-line"
 
+import AuditLogsTable from "./_components/audit-logs-table"
 import { useAuditLogsQuery } from "./_hooks/use-audit-logs-query"
 
 export default function AuditLogsPage() {
   const auditLogsQuery = useAuditLogsQuery()
   const auditLogs = auditLogsQuery.data ?? []
-  const errorMessage = auditLogsQuery.error instanceof Error
-    ? auditLogsQuery.error.message
-    : "Audit logs gagal dimuat."
+  useApiAuthRedirect(auditLogsQuery.error)
 
   return (
     <div className="space-y-6">
@@ -34,20 +34,11 @@ export default function AuditLogsPage() {
         ) : null}
 
         {auditLogsQuery.isError ? (
-          <article className="rounded-lg border border-rose-200 bg-rose-50 p-6">
-            <h3 className="text-base font-semibold text-rose-950">
-              Audit logs gagal dimuat
-            </h3>
-            <p className="mt-2 text-sm text-rose-800">{errorMessage}</p>
-            <Button
-              type="button"
-              variant="destructive"
-              className="mt-5"
-              onClick={() => void auditLogsQuery.refetch()}
-            >
-              Reload audit logs
-            </Button>
-          </article>
+          <ApiErrorState
+            error={auditLogsQuery.error}
+            fallbackMessage="Audit logs gagal dimuat."
+            onRetry={() => void auditLogsQuery.refetch()}
+          />
         ) : null}
 
         {auditLogsQuery.isSuccess && auditLogs.length === 0 ? (
@@ -76,32 +67,10 @@ export default function AuditLogsPage() {
               isStale={auditLogsQuery.isStale}
               onRefresh={() => void auditLogsQuery.refetch()}
             />
-            {auditLogs.map((log) => (
-              <article
-                key={log.id}
-                className="flex items-center justify-between rounded-lg border border-slate-200 bg-white p-4 shadow-sm"
-              >
-                <div>
-                  <p className="text-sm font-medium text-slate-950">
-                    {log.actor} {log.action}
-                  </p>
-                  <p className="mt-1 text-sm text-slate-500">{log.target}</p>
-                </div>
-                <Badge variant="outline">
-                  {formatAuditDate(log.createdAt)}
-                </Badge>
-              </article>
-            ))}
+            <AuditLogsTable auditLogs={auditLogs} />
           </>
         ) : null}
       </section>
     </div>
   )
-}
-
-function formatAuditDate(createdAt: string) {
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-  }).format(new Date(createdAt))
 }

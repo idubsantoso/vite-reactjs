@@ -4,7 +4,7 @@ import { useAuth } from "../login/_hooks/use-auth"
 
 export default function ProtectedRoute() {
   const location = useLocation()
-  const { isAuthenticated, isLoading } = useAuth()
+  const { isAuthError, isAuthenticated, isLoading } = useAuth()
 
   if (isLoading) {
     return (
@@ -12,6 +12,10 @@ export default function ProtectedRoute() {
         Loading session...
       </div>
     )
+  }
+
+  if (isAuthError) {
+    return <Navigate to="/login" replace state={{ from: location }} />
   }
 
   if (!isAuthenticated) {
