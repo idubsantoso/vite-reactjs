@@ -65,7 +65,13 @@ export function UserForm({
         <label className="text-sm font-medium text-slate-700" htmlFor="email">
           Email
         </label>
-        <Input id="email" type="email" {...register("email")} />
+        <Input
+          id="email"
+          type="email"
+          autoComplete="email"
+          disabled={false}
+          {...register("email")}
+        />
         {errors.email ? (
           <p className="text-sm text-red-600">{errors.email.message}</p>
         ) : null}
@@ -78,7 +84,13 @@ export function UserForm({
         >
           Password
         </label>
-        <Input id="password" type="password" {...register("password")} />
+        <Input
+          id="password"
+          type="password"
+          autoComplete="new-password"
+          disabled={false}
+          {...register("password")}
+        />
         {errors.password ? (
           <p className="text-sm text-red-600">{errors.password.message}</p>
         ) : null}

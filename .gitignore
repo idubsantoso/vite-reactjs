@@ -13,6 +13,7 @@ build
 coverage
 .next
 dist-ssr
+.env
 *.local
 pnpm-lock.yaml
 package-lock.json

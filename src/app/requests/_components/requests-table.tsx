@@ -1,6 +1,6 @@
 import { useMemo } from "react"
 import { Link, useSearchParams } from "react-router-dom"
-import { ArrowUpDown, Check, Eye, X } from "lucide-react"
+import { ArrowUpDown, Eye, Pencil, Trash2 } from "lucide-react"
 import {
   flexRender,
   getCoreRowModel,
@@ -38,14 +38,16 @@ import EmptyState from "../../users/_components/empty-state"
 
 type RequestsTableProps = {
   requests: MockRequest[]
-  pendingRequestId?: string
-  onUpdateStatus: (request: MockRequest, status: MockRequest["status"]) => void
+  pendingDeleteRequestId?: string
+  onEditRequest: (request: MockRequest) => void
+  onDeleteRequest: (request: MockRequest) => void
 }
 
 export default function RequestsTable({
   requests,
-  pendingRequestId,
-  onUpdateStatus,
+  pendingDeleteRequestId,
+  onEditRequest,
+  onDeleteRequest,
 }: RequestsTableProps) {
   const [searchParams, setSearchParams] = useSearchParams()
   const searchKeyword = searchParams.get("q") ?? ""
@@ -136,7 +138,8 @@ export default function RequestsTable({
       header: () => <span className="block text-right">Actions</span>,
       cell: ({ row }) => {
         const request = row.original
-        const isPending = pendingRequestId === request.id
+        const isDeleting = pendingDeleteRequestId === request.id
+        const isActionDisabled = Boolean(pendingDeleteRequestId)
 
         return (
           <div className="flex flex-wrap justify-end gap-2">
@@ -153,27 +156,27 @@ export default function RequestsTable({
               type="button"
               size="sm"
               variant="outline"
-              disabled={Boolean(pendingRequestId)}
-              aria-label={`Approve ${request.id}`}
-              onClick={() => onUpdateStatus(request, "Approved")}
+              disabled={isActionDisabled}
+              aria-label={`Edit ${request.id}`}
+              onClick={() => onEditRequest(request)}
             >
-              <Check className="size-4" aria-hidden="true" />
-              Approve
+              <Pencil className="size-4" aria-hidden="true" />
+              Edit
             </Button>
             <Button
               type="button"
               size="sm"
               variant="outline"
-              disabled={Boolean(pendingRequestId)}
-              aria-label={`Reject ${request.id}`}
-              onClick={() => onUpdateStatus(request, "Rejected")}
+              disabled={isActionDisabled}
+              aria-label={`Delete ${request.id}`}
+              onClick={() => onDeleteRequest(request)}
             >
-              <X className="size-4" aria-hidden="true" />
-              Reject
+              <Trash2 className="size-4" aria-hidden="true" />
+              Delete
             </Button>
-            {isPending ? (
+            {isDeleting ? (
               <span className="basis-full text-right text-xs text-slate-500">
-                Updating...
+                Deleting...
               </span>
             ) : null}
           </div>
@@ -181,7 +184,11 @@ export default function RequestsTable({
       },
       enableSorting: false,
     },
-  ], [onUpdateStatus, pendingRequestId])
+  ], [
+    onDeleteRequest,
+    onEditRequest,
+    pendingDeleteRequestId,
+  ])
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
@@ -276,9 +283,9 @@ export default function RequestsTable({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="All">All status</SelectItem>
-              <SelectItem value="Pending">Pending</SelectItem>
-              <SelectItem value="Approved">Approved</SelectItem>
-              <SelectItem value="Rejected">Rejected</SelectItem>
+              <SelectItem value="Active">Active</SelectItem>
+              <SelectItem value="Invited">Invited</SelectItem>
+              <SelectItem value="Suspended">Suspended</SelectItem>
             </SelectContent>
           </Select>
           <Select
@@ -460,11 +467,11 @@ function TablePagination({
 }
 
 function RequestStatusBadge({ status }: { status: MockRequest["status"] }) {
-  if (status === "Approved") {
+  if (status === "Active") {
     return <Badge variant="success">{status}</Badge>
   }
 
-  if (status === "Rejected") {
+  if (status === "Suspended") {
     return <Badge variant="destructive">{status}</Badge>
   }
 

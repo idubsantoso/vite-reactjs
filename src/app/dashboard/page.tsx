@@ -96,8 +96,8 @@ function createSummaryItems(
   const activeUsers = users.filter((user) => user.status === "Active").length
   const pendingUsers = users.filter((user) => user.status === "Pending").length
   const adminUsers = users.filter((user) => user.role === "Admin").length
-  const pendingRequests = requests.filter(
-    (request) => request.status === "Pending",
+  const activeRequests = requests.filter(
+    (request) => request.status === "Active",
   ).length
 
   return [
@@ -114,8 +114,8 @@ function createSummaryItems(
         : "0% activation rate",
     },
     {
-      label: "Pending Requests",
-      value: pendingRequests.toLocaleString("en-US"),
+      label: "Active Requests",
+      value: activeRequests.toLocaleString("en-US"),
       meta: `${requests.length} total requests`,
     },
     {

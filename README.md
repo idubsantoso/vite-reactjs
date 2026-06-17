@@ -2,7 +2,7 @@
 
 ## Backend Mode
 
-Development uses MSW by default for mock `/api` responses.
+Development uses MSW by default for mock `/api/v1` responses.
 
 Use the real backend by disabling MSW:
 
@@ -10,17 +10,27 @@ Use the real backend by disabling MSW:
 VITE_USE_MSW=false pnpm dev
 ```
 
-When `VITE_USE_MSW=false`, requests to `/api/...` are not intercepted by MSW
+When `VITE_USE_MSW=false`, requests to `/api/v1/...` are not intercepted by MSW
 and will be sent to the real backend available from the app origin or Vite
 proxy.
 
 To target a backend on a different origin, set `VITE_API_BASE_URL`:
 
 ```bash
-VITE_USE_MSW=false VITE_API_BASE_URL=https://api.example.test pnpm dev
+VITE_USE_MSW=false VITE_API_BASE_URL=http://localhost:8000/api/v1 pnpm dev
 ```
 
-When `VITE_API_BASE_URL` is empty, the API client uses the app origin.
+Or create `.env.local`:
+
+```env
+VITE_USE_MSW=false
+VITE_API_BASE_URL=http://localhost:8000/api/v1
+```
+
+When `VITE_API_BASE_URL` is empty, the API client uses the app origin with
+`/api/v1` as the default API base path for MSW.
+The frontend expects the Apidog response envelope:
+`{ "status_code": 200, "data": ..., "message": "..." }`.
 
 ## Demo Path
 
@@ -54,7 +64,7 @@ Auth failure behavior:
 
 ## Known Limitations and Follow-up Fixes
 
-- Real backend responses must match the current `/api/...` response shapes.
+- Real backend responses must match the Apidog `/api/v1/...` response envelope.
 - Users, requests, and audit logs table filtering/pagination are client-side
   until backend query contracts are added.
 - MSW mock data is in-memory and resets on page reload.
