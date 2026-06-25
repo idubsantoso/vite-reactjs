@@ -1,7 +1,13 @@
-import { AUTH_TOKEN_STORAGE_KEY } from "@/app/_constants/auth-storage"
+import {
+  AUTH_STORAGE_KEY,
+  AUTH_TOKEN_STORAGE_KEY,
+  AUTH_USER_ID_STORAGE_KEY,
+} from "@/app/_constants/auth-storage"
+import { queryClient } from "@/libs/query-client"
 
 type ApiRequestOptions = Omit<RequestInit, "body"> & {
   body?: unknown
+  redirectOnUnauthorized?: boolean
   scenarioParam?: string | false
 }
 
@@ -33,7 +39,13 @@ export async function apiRequest<T>(
   path: string,
   options: ApiRequestOptions = {},
 ): Promise<T> {
-  const { body, headers, scenarioParam = "scenario", ...requestOptions } = options
+  const {
+    body,
+    headers,
+    redirectOnUnauthorized = true,
+    scenarioParam = "scenario",
+    ...requestOptions
+  } = options
   const url = createApiUrl(path, scenarioParam)
   const token = localStorage.getItem(AUTH_TOKEN_STORAGE_KEY)
   const requestHeaders = new Headers(headers)
@@ -55,6 +67,10 @@ export async function apiRequest<T>(
   })
 
   if (!response.ok) {
+    if (response.status === 401 && redirectOnUnauthorized) {
+      handleUnauthorized()
+    }
+
     const errorPayload = await parseJson<ApiErrorPayload>(response)
     throw new ApiError(
       getErrorMessage(errorPayload),
@@ -114,6 +130,17 @@ function ensureTrailingSlash(value: string) {
 
 function stripLeadingSlash(value: string) {
   return value.replace(/^\/+/, "")
+}
+
+function handleUnauthorized() {
+  localStorage.removeItem(AUTH_STORAGE_KEY)
+  localStorage.removeItem(AUTH_USER_ID_STORAGE_KEY)
+  localStorage.removeItem(AUTH_TOKEN_STORAGE_KEY)
+  queryClient.clear()
+
+  if (window.location.pathname !== "/login") {
+    window.location.replace("/login")
+  }
 }
 
 async function parseJson<T>(response: Response): Promise<T> {

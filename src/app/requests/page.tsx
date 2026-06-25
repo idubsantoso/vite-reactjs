@@ -4,7 +4,6 @@ import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import ApiErrorState from "@/app/_components/api-error-state"
-import { useApiAuthRedirect } from "@/app/_hooks/use-api-auth-redirect"
 import QueryStateLine from "@/app/_components/query-state-line"
 import type { MockRequest } from "@/mocks/data"
 import {
@@ -19,12 +18,10 @@ import { useUsersQuery } from "@/app/users/_hooks/use-users-query"
 
 import { RequestForm } from "./_components/request-form"
 import RequestsTable from "./_components/requests-table"
-import {
-  useCreateRequestMutation,
-  useDeleteRequestMutation,
-  useUpdateRequestMutation,
-} from "./_hooks/use-request-mutations"
+import { useCreateRequestMutation } from "./_hooks/use-create-request-mutation"
+import { useDeleteRequestMutation } from "./_hooks/use-delete-request-mutation"
 import { useRequestsQuery } from "./_hooks/use-requests-query"
+import { useUpdateRequestMutation } from "./_hooks/use-update-request-mutation"
 import type { RequestFormValues } from "./_schemas/request-schema"
 
 export default function RequestsPage() {
@@ -38,11 +35,6 @@ export default function RequestsPage() {
   const [deletingRequest, setDeletingRequest] = useState<MockRequest | null>(null)
   const requests = requestsQuery.data ?? []
   const users = usersQuery.data ?? []
-  useApiAuthRedirect(requestsQuery.error)
-  useApiAuthRedirect(usersQuery.error)
-  useApiAuthRedirect(createRequestMutation.error)
-  useApiAuthRedirect(updateRequestMutation.error)
-  useApiAuthRedirect(deleteRequestMutation.error)
   const pendingDeleteRequestId = deleteRequestMutation.isPending
     ? deleteRequestMutation.variables
     : undefined

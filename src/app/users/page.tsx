@@ -4,7 +4,6 @@ import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import ApiErrorState from "@/app/_components/api-error-state"
-import { useApiAuthRedirect } from "@/app/_hooks/use-api-auth-redirect"
 import QueryStateLine from "@/app/_components/query-state-line"
 import {
   Dialog,
@@ -18,11 +17,9 @@ import { UserForm } from "./_components/user-form"
 import EmptyState from "./_components/empty-state"
 import UserTable from "./_components/user-table"
 import type { User } from "./_constants/sample-users"
-import {
-  useCreateUserMutation,
-  useUpdateUserMutation,
-  useUpdateUserStatusMutation,
-} from "./_hooks/use-user-mutations"
+import { useCreateUserMutation } from "./_hooks/use-create-user-mutation"
+import { useUpdateUserMutation } from "./_hooks/use-update-user-mutation"
+import { useUpdateUserStatusMutation } from "./_hooks/use-update-user-status-mutation"
 import { useUsersQuery } from "./_hooks/use-users-query"
 import type { UserFormValues } from "./_schemas/user-schema"
 
@@ -34,10 +31,6 @@ export default function UsersPage() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [editingUser, setEditingUser] = useState<User | null>(null)
   const users = usersQuery.data ?? []
-  useApiAuthRedirect(usersQuery.error)
-  useApiAuthRedirect(createUserMutation.error)
-  useApiAuthRedirect(updateUserMutation.error)
-  useApiAuthRedirect(updateUserStatusMutation.error)
 
   async function handleCreateUser(values: UserFormValues) {
     await createUserMutation.mutateAsync(values)

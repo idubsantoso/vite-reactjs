@@ -23,6 +23,7 @@ export async function login(credentials: LoginCredentials): Promise<LoginRespons
   const data = await apiDataRequest<ApiLoginResponse>("/auth/login", {
     method: "POST",
     body: credentials,
+    redirectOnUnauthorized: false,
   })
 
   return {

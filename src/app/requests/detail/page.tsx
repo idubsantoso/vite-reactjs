@@ -1,20 +1,31 @@
 import { Link, useParams } from "react-router-dom"
+import type { ComponentProps } from "react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import ApiErrorState from "@/app/_components/api-error-state"
-import { useApiAuthRedirect } from "@/app/_hooks/use-api-auth-redirect"
 import QueryStateLine from "@/app/_components/query-state-line"
 import type { MockRequest } from "@/mocks/data"
 
-import { useRequestQuery } from "./_hooks/use-requests-query"
+import { useRequestQuery } from "./_hooks/use-request-query"
+
+type BadgeVariant = ComponentProps<typeof Badge>["variant"]
+
+const statusVariants: Partial<Record<MockRequest["status"], BadgeVariant>> = {
+  Active: "success",
+  Suspended: "destructive",
+}
+
+const priorityVariants: Partial<Record<MockRequest["priority"], BadgeVariant>> = {
+  High: "destructive",
+  Medium: "warning",
+}
 
 export default function RequestDetailPage() {
   const params = useParams()
   const requestQuery = useRequestQuery(params.id)
   const request = requestQuery.data
-  useApiAuthRedirect(requestQuery.error)
 
   if (requestQuery.isLoading) {
     return (
@@ -102,27 +113,15 @@ export default function RequestDetailPage() {
 }
 
 function RequestStatusBadge({ status }: { status: MockRequest["status"] }) {
-  if (status === "Active") {
-    return <Badge variant="success">{status}</Badge>
-  }
-
-  if (status === "Suspended") {
-    return <Badge variant="destructive">{status}</Badge>
-  }
-
-  return <Badge variant="warning">{status}</Badge>
+  return <Badge variant={statusVariants[status] || "warning"}>{status}</Badge>
 }
 
 function PriorityBadge({ priority }: { priority: MockRequest["priority"] }) {
-  if (priority === "High") {
-    return <Badge variant="destructive">{priority}</Badge>
-  }
-
-  if (priority === "Medium") {
-    return <Badge variant="warning">{priority}</Badge>
-  }
-
-  return <Badge variant="outline">{priority}</Badge>
+  return (
+    <Badge variant={priorityVariants[priority] || "outline"}>
+      {priority}
+    </Badge>
+  )
 }
 
 function formatRequestDate(submittedAt: string) {
