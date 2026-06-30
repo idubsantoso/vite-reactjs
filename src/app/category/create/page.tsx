@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { useCreateCategoryMutation } from "../_hooks/use-create-category-mutation";
+import { useCreateCategoryMutation } from "./_hooks/use-create-category-mutation";
 import type { CategoryFormValues } from "../_schemas/category-schema";
 import { CategoryForm } from "../_components/category-form";
 

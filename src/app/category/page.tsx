@@ -77,6 +77,7 @@ export default function CategoriesPage() {
                     <CategoriesTable
                         categories={categories}
                         pendingDeleteCategoryId={pendingDeleteCategoryId}
+                        onViewCategory={(category) => navigate(`/categories/${category.id}`)}
                         onEditCategory={(category) => navigate(`/categories/${category.id}/edit`)}
                         onDeleteCategory={setDeletingCategory}
                     />

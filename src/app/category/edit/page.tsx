@@ -1,6 +1,6 @@
 import { useNavigate, useParams } from "react-router-dom";
 import { useCategoryQuery } from "../_hooks/use-category-query";
-import { useUpdateCategoryMutation } from "../_hooks/use-update-category-mutation";
+import { useUpdateCategoryMutation } from "./_hooks/use-update-category-mutation";
 import type { CategoryFormValues } from "../_schemas/category-schema";
 import { CategoryForm } from "../_components/category-form";
 

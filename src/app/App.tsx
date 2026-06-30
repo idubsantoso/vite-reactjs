@@ -19,6 +19,7 @@ import UsersPage from "./users/page"
 import CategoriesPage from "./category/page"
 import EditCategoryPage from "./category/edit/page"
 import CreateCategoryPage from "./category/create/page"
+import DetailCategoryPage from "./category/detail/page"
 
 export default function App() {
   return (
@@ -33,6 +34,7 @@ export default function App() {
             <Route path="/users" element={<UsersPage />} />
             <Route path="/users/:id" element={<UserDetailPage />} />
             <Route path="/categories" element={<CategoriesPage />} />
+            <Route path="/categories/:id" element={<DetailCategoryPage />} />
             <Route path="/categories/create" element={<CreateCategoryPage />} />
             <Route path="/categories/:id/edit" element={<EditCategoryPage />} />
             <Route path="/requests" element={<RequestsPage />} />

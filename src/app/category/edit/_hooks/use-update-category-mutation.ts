@@ -1,7 +1,7 @@
 import { updateCategory } from "@/api/categories";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type { CategoryFormValues } from "../_schemas/category-schema";
-import { categoriesQueryKeys } from "../_constants/category-query-keys";
+import type { CategoryFormValues } from "../../_schemas/category-schema";
+import { categoriesQueryKeys } from "../../_constants/category-query-keys";
 
 export function useUpdateCategoryMutation() {
     const queryClient = useQueryClient();

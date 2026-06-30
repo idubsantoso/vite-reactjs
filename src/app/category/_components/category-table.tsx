@@ -2,11 +2,12 @@ import type { Category } from "@/api/categories"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Pencil, Trash2 } from "lucide-react"
+import { Eye, Pencil, Trash2 } from "lucide-react"
 
 type CategoryTableProps = {
     categories: Category[]
     pendingDeleteCategoryId?: string
+    onViewCategory: (category: Category) => void
     onEditCategory: (category: Category) => void
     onDeleteCategory: (category: Category) => void
 }
@@ -16,6 +17,7 @@ export default function CategoriesTable({
     pendingDeleteCategoryId,
     onEditCategory,
     onDeleteCategory,
+    onViewCategory,
 }: CategoryTableProps) {
     return (
         <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-md">
@@ -54,6 +56,18 @@ export default function CategoriesTable({
 
                                 <TableCell>
                                     <div className="flex flex-wrap justify-end gap-2">
+                                        <Button 
+                                            type="button" 
+                                            size="sm" 
+                                            variant="outline" 
+                                            disabled={isActionDisabled} 
+                                            aria-label={`View ${category.name}`} 
+                                            onClick={() => onViewCategory(category)}
+                                        >
+                                            <Eye className="size-4" aria-hidden="true" />
+                                            View
+                                        </Button>
+
                                         <Button
                                             type="button"
                                             size="sm"
