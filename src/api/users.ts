@@ -24,6 +24,7 @@ export async function getUser(id: string) {
   const data = await apiDataRequest<ApiUser | { items?: ApiUser[] }>(
     `/users/${id}`,
   )
+  await new Promise((resolve) => setTimeout(resolve, 3000)) // Simulate network delay
 
   return mapUser(getApiUserFromData(data, id))
 }
