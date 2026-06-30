@@ -19,6 +19,7 @@ type NavigationItem = {
 const navigationItems: NavigationItem[] = [
   { label: "Dashboard", path: "/dashboard" },
   { label: "Users", path: "/users" },
+  { label: "Categories", path: "/categories" },
   { label: "Requests", path: "/requests" },
   { label: "Audit Logs", path: "/audit-logs" },
 ]
@@ -118,6 +119,10 @@ function getNavigationClassName(isActive: boolean) {
 function getActivePath(pathname: string) {
   if (pathname.startsWith("/users")) {
     return "/users"
+  }
+
+  if (pathname.startsWith("/categories")) {
+    return "/categories"
   }
 
   if (pathname.startsWith("/requests")) {
