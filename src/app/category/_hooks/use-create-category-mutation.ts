@@ -1,6 +1,6 @@
 import { createCategory } from "@/api/categories";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { invalidCategoryCollections } from "../_utils/invalidate-category-queries";
+import { categoriesQueryKeys } from "../_constants/category-query-keys";
 
 export function useCreateCategoryMutation() {
     const queryClient = useQueryClient();
@@ -8,7 +8,7 @@ export function useCreateCategoryMutation() {
     return useMutation({
         mutationFn: createCategory,
         onSuccess: () => {
-            invalidCategoryCollections(queryClient);
+            queryClient.invalidateQueries({ queryKey: categoriesQueryKeys.all })
         },
     });
 }

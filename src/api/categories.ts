@@ -1,4 +1,4 @@
-import type { CategoryFormValues } from "@/app/categories/_schemas/category-schema"
+import type { CategoryFormValues } from "@/app/category/_schemas/category-schema"
 import { apiDataRequest, apiItemsRequest, apiRequest } from "./client"
 
 export type Category = {

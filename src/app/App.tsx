@@ -16,7 +16,9 @@ import RequestDetailPage from "./requests/detail/page"
 import RequestsPage from "./requests/page"
 import UserDetailPage from "./users/detail-page"
 import UsersPage from "./users/page"
-import CategoriesPage from "./categories/page"
+import CategoriesPage from "./category/page"
+import EditCategoryPage from "./category/edit/page"
+import CreateCategoryPage from "./category/create/page"
 
 export default function App() {
   return (
@@ -31,6 +33,8 @@ export default function App() {
             <Route path="/users" element={<UsersPage />} />
             <Route path="/users/:id" element={<UserDetailPage />} />
             <Route path="/categories" element={<CategoriesPage />} />
+            <Route path="/categories/create" element={<CreateCategoryPage />} />
+            <Route path="/categories/:id/edit" element={<EditCategoryPage />} />
             <Route path="/requests" element={<RequestsPage />} />
             <Route path="/requests/:id" element={<RequestDetailPage />} />
             <Route path="/audit-logs" element={<AuditLogsPage />} />

@@ -1,45 +1,23 @@
 import { useState } from "react";
-import type { CategoryFormValues } from "./_schemas/category-schema";
 import type { Category } from "@/api/categories";
 import { useCategoriesQuery } from "./_hooks/use-categories-query";
-import { useCreateCategoryMutation } from "./_hooks/use-create-category-mutation";
-import { useUpdateCategoryMutation } from "./_hooks/use-update-category-mutation";
 import { useDeleteCategoryMutation } from "./_hooks/use-delete-category-mutation";
 import QueryStateLine from "../_components/query-state-line";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@radix-ui/react-dialog";
 import { DialogFooter, DialogHeader } from "@/components/ui/dialog";
-import { CategoryForm } from "./_components/category-form";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import CategoriesTable from "./_components/categories-table";
+import CategoriesTable from "./_components/category-table";
+import { useNavigate } from "react-router-dom";
 
 export default function CategoriesPage() {
     const categoriesQuery = useCategoriesQuery();
-    const createCategoryMutation = useCreateCategoryMutation();
-    const updateCategoryMutation = useUpdateCategoryMutation();
     const deleteCategoryMutation = useDeleteCategoryMutation();
-
-    const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-    const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+    const navigate = useNavigate();
     const [deletingCategory, setDeletingCategory] = useState<Category | null>(null);
 
     const categories = categoriesQuery.data ?? [];
     const pendingDeleteCategoryId = deleteCategoryMutation.isPending ? deleteCategoryMutation.variables : undefined;
-
-    async function handleCreateCategory(values: CategoryFormValues) {
-        await createCategoryMutation.mutateAsync(values);
-        setIsCreateDialogOpen(false);
-    }
-
-    async function handleUpdateCategory(values: CategoryFormValues) {
-        if (!editingCategory) return;
-
-        await updateCategoryMutation.mutateAsync({
-            id: editingCategory.id,
-            values,
-        });
-        setEditingCategory(null);
-    }
 
     async function handleDeleteCategory() {
         if(!deletingCategory) return;
@@ -56,7 +34,7 @@ export default function CategoriesPage() {
                     <h2 className="mt-1 text-2xl font-semibold text-slate-950">Category List</h2>
                  </header>
 
-                 <Button type="button" onClick={() => setIsCreateDialogOpen(true)}>
+                 <Button type="button" onClick={() => navigate("/categories/create")}>
                     <Plus className="size-4" aria-hidden="true" />
                     Create Category
                  </Button>
@@ -99,70 +77,11 @@ export default function CategoriesPage() {
                     <CategoriesTable
                         categories={categories}
                         pendingDeleteCategoryId={pendingDeleteCategoryId}
-                        onEditCategory={setEditingCategory}
+                        onEditCategory={(category) => navigate(`/categories/${category.id}/edit`)}
                         onDeleteCategory={setDeletingCategory}
                     />
                 </div>
             ) : null}
-
-            <Dialog
-                open={isCreateDialogOpen}
-                onOpenChange={setIsCreateDialogOpen}
-                >
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Create Category</DialogTitle>
-                            <DialogDescription>
-                                This will create a new category.
-                            </DialogDescription>
-                        </DialogHeader>
-
-                        <CategoryForm onSubmit={handleCreateCategory} />
-
-                        {createCategoryMutation.isError ? (
-                            <p className="text-sm text-red-600">
-                                {getErrorMessage(createCategoryMutation.error,
-                                    "Something went wrong. Please try again later.")}
-                            </p>
-                        ) : null}
-                    </DialogContent>
-                </Dialog>
-
-                <Dialog
-                    open={Boolean(editingCategory)}
-                    onOpenChange={(open) => {
-                        if (!open) setEditingCategory(null)
-                    }}
-                >
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Edit Category</DialogTitle>
-                            <DialogDescription>
-                                This will update the category.
-                            </DialogDescription>
-                        </DialogHeader>
-
-                        {editingCategory ? (
-                            <CategoryForm
-                                key={editingCategory.id}
-                                mode="edit"
-                                defaultValues={{
-                                    name: editingCategory.name,
-                                    description: editingCategory.description ?? "",
-                                    isActive: editingCategory.isActive,
-                                }}
-                                onSubmit={handleUpdateCategory}
-                            />
-                        ) : null}
-
-                        {updateCategoryMutation.isError ? (
-                            <p className="text-sm text-red-600">
-                                {getErrorMessage(updateCategoryMutation.error, "Something went wrong. Please try again later.")}
-
-                            </p>
-                        ) : null}
-                    </DialogContent>
-                </Dialog>
 
                 <Dialog
                     open={Boolean(deletingCategory)}
