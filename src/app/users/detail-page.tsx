@@ -4,17 +4,15 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import ApiErrorState from "@/app/_components/api-error-state"
-import { useApiAuthRedirect } from "@/app/_hooks/use-api-auth-redirect"
 import QueryStateLine from "@/app/_components/query-state-line"
 
 import type { UserStatus } from "./_constants/sample-users"
-import { useUserQuery } from "./_hooks/use-users-query"
+import { useUserQuery } from "./_hooks/use-user-query"
 
 export default function UserDetailPage() {
   const params = useParams()
   const userQuery = useUserQuery(params.id)
   const user = userQuery.data
-  useApiAuthRedirect(userQuery.error)
 
   if (userQuery.isLoading) {
     return (

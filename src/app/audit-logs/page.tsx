@@ -1,7 +1,6 @@
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import ApiErrorState from "@/app/_components/api-error-state"
-import { useApiAuthRedirect } from "@/app/_hooks/use-api-auth-redirect"
 import QueryStateLine from "@/app/_components/query-state-line"
 
 import AuditLogsTable from "./_components/audit-logs-table"
@@ -10,7 +9,6 @@ import { useAuditLogsQuery } from "./_hooks/use-audit-logs-query"
 export default function AuditLogsPage() {
   const auditLogsQuery = useAuditLogsQuery()
   const auditLogs = auditLogsQuery.data ?? []
-  useApiAuthRedirect(auditLogsQuery.error)
 
   return (
     <div className="space-y-6">

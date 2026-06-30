@@ -5,7 +5,7 @@ export type MockRequest = {
   id: string
   title: string
   owner: string
-  status: "Pending" | "Approved" | "Rejected"
+  status: "Active" | "Invited" | "Suspended"
   priority: "Low" | "Medium" | "High"
   assignee: string
   submittedAt: string
@@ -54,7 +54,7 @@ export const mockRequests: MockRequest[] = [
     id: "REQ-1001",
     title: "Access approval",
     owner: "Sari Wijaya",
-    status: "Pending",
+    status: "Active",
     priority: "High",
     assignee: "Budi Santoso",
     submittedAt: "2026-05-26T02:41:00.000Z",
@@ -63,7 +63,7 @@ export const mockRequests: MockRequest[] = [
     id: "REQ-1002",
     title: "Role change",
     owner: "Andi Pratama",
-    status: "Approved",
+    status: "Invited",
     priority: "Medium",
     assignee: "Sari Wijaya",
     submittedAt: "2026-05-25T09:20:00.000Z",
@@ -72,7 +72,7 @@ export const mockRequests: MockRequest[] = [
     id: "REQ-1003",
     title: "Audit export access",
     owner: "Budi Santoso",
-    status: "Rejected",
+    status: "Suspended",
     priority: "Low",
     assignee: "Andi Pratama",
     submittedAt: "2026-05-24T04:12:00.000Z",
