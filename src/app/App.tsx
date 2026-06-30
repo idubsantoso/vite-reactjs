@@ -16,6 +16,7 @@ import RequestDetailPage from "./requests/detail/page"
 import RequestsPage from "./requests/page"
 import UserDetailPage from "./users/detail-page"
 import UsersPage from "./users/page"
+import CategoriesPage from "./categories/page"
 
 export default function App() {
   return (
@@ -29,6 +30,7 @@ export default function App() {
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/users" element={<UsersPage />} />
             <Route path="/users/:id" element={<UserDetailPage />} />
+            <Route path="/categories" element={<CategoriesPage />} />
             <Route path="/requests" element={<RequestsPage />} />
             <Route path="/requests/:id" element={<RequestDetailPage />} />
             <Route path="/audit-logs" element={<AuditLogsPage />} />

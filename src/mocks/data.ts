@@ -11,6 +11,13 @@ export type MockRequest = {
   submittedAt: string
 }
 
+export type MockCategory = {
+  id: string
+  name: string
+  description: string
+  isActive: boolean
+}
+
 export type AuditLog = {
   id: string
   actor: string
